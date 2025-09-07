@@ -30,6 +30,9 @@ const Page = () => {
     setError("");
 
     try {
+      // Store email in localStorage before redirecting
+      localStorage.setItem('signup_email', formData.email);
+
       // Sign up user with supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -45,26 +48,28 @@ const Page = () => {
       if (signUpError) {
         throw signUpError
       }
-
-      /* 
-      // If signup successful, create a profile record. (However I wont use this because i set up a trigger in supabase,
-         thus when a new user sign up it will by default copy the details to the profile in database).
-
+ 
+      // If signup successful, create a profile record via API
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              username: formData.username,
-              email: formData.email
-            }
-          ])
+        const response = await fetch('/api/create-profile', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: authData.user.id,
+            username: formData.username,
+            email: formData.email
+          })
+        })
 
-        if (profileError) {
-          throw profileError
+        const result = await response.json()
+
+        if(!response.ok) {
+          throw new Error(result.error  || 'Failed to create profile')
         }
-      } */
+        
+      }
 
       // Redirect to verification page or dashboard - in this case "verification page"
       router.push("/verify-email")

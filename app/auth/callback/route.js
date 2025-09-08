@@ -1,38 +1,65 @@
-import { createServerClientWrapper } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 
 export async function GET(request) {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
     
-    if (code) {
-
-        const supabase = await createServerClientWrapper()
-
-        // 1. Exchange the auth code for a session
-        const { data: {session}, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-            console.error("Auth exchange error:", error.message)
-            return NextResponse.redirect(new URL("/login?error=auth", request.url))
-        }
-
-        // 2. Fetch the user's profile (to check role)
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single()
-
-        if (profileError) {
-            console.error("Profile fetch error:", profileError.message)
-            return NextResponse.redirect(new URL("/login?error=profile", request.url))
-        }
-
-        // and redirect based on role
-        const redirectPath = profile.role === "admin" ? "/dashboard" : "/profile"
-        return NextResponse.redirect(new URL(redirectPath, request.url))
+    if (!code) {
+        return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Default fallback → login page
-    return NextResponse.redirect(new URL('/login', request.url))
+    try {
+        // ✅ Better: Use a temporary response for cookie operations
+        const tempResponse = NextResponse.redirect(new URL('/processing', request.url))
+        
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            {
+                cookies: {
+                    get(name) {
+                        return request.cookies.get(name)?.value
+                    },
+                    set(name, value, options) {
+                        tempResponse.cookies.set(name, value, options)
+                    },
+                    remove(name, options) {
+                        tempResponse.cookies.set(name, '', options)
+                    },
+                },
+            }
+        )
+
+        // Exchange code for session (this sets cookies on tempResponse)
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) throw error
+
+        // Get user and role
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('No user found')
+
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single()
+
+        if (!profile) throw new Error('No profile found')
+
+        // Create final redirect with the same cookies
+        const redirectPath = profile.role === "admin" ? "/dashboard" : "/profile"
+        const finalResponse = NextResponse.redirect(new URL(redirectPath, request.url))
+        
+        // Copy cookies from temp response to final response
+        tempResponse.cookies.getAll().forEach(cookie => {
+            finalResponse.cookies.set(cookie)
+        })
+
+        return finalResponse
+
+    } catch (error) {
+        console.error("Auth callback error:", error)
+        return NextResponse.redirect(new URL("/login?error=auth", request.url))
+    }
 }

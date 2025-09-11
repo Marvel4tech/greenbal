@@ -55,7 +55,7 @@ export async function POST(request) {
         }
         
         console.log('Profile created successfully:')
-        return NextResponse.json({ success: true })  
+        return NextResponse.json({ success: true })
 
     } catch (error) {
         console.error('API error:', error)

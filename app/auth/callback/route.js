@@ -10,7 +10,7 @@ export async function GET(request) {
     }
 
     try {
-        // ✅ Better: Use a temporary response for cookie operations
+        // Use a temporary response for cookie operations
         const tempResponse = NextResponse.redirect(new URL('/processing', request.url))
         
         const supabase = createServerClient(

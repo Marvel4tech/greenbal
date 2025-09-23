@@ -1,8 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react"
 
 const images = [
@@ -15,7 +17,59 @@ const images = [
 ]
 
 const Page = () => {
+  const supabase = createClient();
+  const router = useRouter();
+
+  // States
   const [current, setCurrent] = useState(0);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // check if user is authenticated
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // User is logged in, get their role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .select();
+
+          // Redirect based on role
+        const redirectPath = profile?.role === 'admin' ? '/dashboard' : '/profile';
+        router.push(redirectPath);
+      } else {
+        setUser(null)
+        setLoading(false)
+      }
+    };
+
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single
+
+          const redirectPath = profile?.role === 'admin' ? '/dashboard' : '/profile'
+          router.push(redirectPath)
+        } else {
+          setUser(null)
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth, router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -23,6 +77,18 @@ const Page = () => {
     }, 5000); // The homepage bg images to change every 5 secs
     return () => clearInterval(interval)
   }, []);
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <section className="relative h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-primary">Checking authentication...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className=" relative h-full overflow-hidden">

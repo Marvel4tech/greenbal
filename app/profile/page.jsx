@@ -1,3 +1,4 @@
+import SignOutButton from '@/components/SignOutButton'
 import { createServerClientWrapper } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -30,6 +31,8 @@ const Page = async () => {
         <p><strong>Username:</strong> {profile.username}</p>
         <p><strong>Role:</strong> {profile.role}</p>
       </div>
+
+      <SignOutButton className=' mt-10' />
     </div>
   )
 }

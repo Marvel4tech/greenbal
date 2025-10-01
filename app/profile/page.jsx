@@ -1,40 +1,61 @@
 import SignOutButton from '@/components/SignOutButton'
-import { createServerClientWrapper } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { Gamepad2, InfoIcon, Newspaper, Trophy } from 'lucide-react'
+import Link from 'next/link'
+import React from 'react'
 
-const Page = async () => {
-  const supabase = await createServerClientWrapper() // Create server-side Supabase client
-  const { data: { user }, error: userError } = await supabase.auth.getUser() // Get the currently logged-in user
+const page = () => {
 
-  if (userError || !user) {
-    redirect('/login') // Redirect if not logged in
-  }
+  const siderlinks = [
+    { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
+    { label: 'Play Game', href: '/profile/play', icon: Gamepad2 },
+    { label: 'Game Assistance', href: '/profile/assistance', icon: InfoIcon },
+    { label: 'News', href: '/profile/news', icon: Newspaper },
+  ]
 
-  // Fetch the user's profile securely
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('username, role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile) {
-    console.error('Profile fetch error:', profileError?.message)
-    redirect('/login')  // Redirect if profile is missing or fetch fails
-  }
-
-  // Render profile
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">Your Profile</h1>
-      <p>Welcome, {user.email}!</p>
-      <div className="mt-4">
-        <p><strong>Username:</strong> {profile.username}</p>
-        <p><strong>Role:</strong> {profile.role}</p>
-      </div>
+    <div className=' flex flex-col md:flex-row h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12'>
+      {/* Sidebar */}
+      <aside className=' flex flex-row my-2 justify-center md:flex-col md:w-40 lg:w-56'>
+        <div className=' hidden md:block py-6 border-b border-primary'>
+          <h2 className=' text-xl font-bold'>My Dashboard</h2>
+        </div>
+        <nav className=' flex flex-row text-[10px] md:text-sm lg:text-base md:flex-col md:flex-1 md:space-y-4 md:overflow-y-auto md:mt-10'>
+          {siderlinks.map(({ label, href, icon: Icon }) => (
+            <Link key={href} href={href} className=' flex gap-1  md:gap-2 items-center p-2 rounded-md md:hover:bg-white/10 transition'>
+              {<Icon className=' w-2 h-3 md:w-5 md:h-5 '/>}
+              <span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+        <div className=' hidden md:block'>
+          <SignOutButton />
+        </div>
+      </aside>
 
-      <SignOutButton className=' mt-10' />
+      {/* Main content */}
+      <main className=' flex-1 bg-gray-100 dark:bg-gray-800 rounded-sm'>
+          <div className=' flex flex-col md:flex-row h-full py-6 px-4 md:px-8 gap-4'>
+            <div className=' flex-1 bg-white dark:bg-black/70 border shadow-2xl rounded-sm'>
+              user
+            </div>
+            <div className=' flex-1'>
+              <div className=' flex flex-col gap-4 h-full'>
+                <div className=' flex-1 bg-white dark:bg-black/70 shadow-2xl border rounded-sm'>
+                  others 1
+                </div>
+                <div className=' flex-1 bg-white dark:bg-black/70 shadow-2xl border rounded-sm'>
+                  others 2
+                </div>
+              </div>
+            </div>
+          </div>
+      </main>
+
+      <div className=' md:hidden mb-6 mt-10'>
+        <SignOutButton />
+      </div>
     </div>
   )
 }
 
-export default Page
+export default page

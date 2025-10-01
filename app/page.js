@@ -1,5 +1,6 @@
 "use client"
 
+import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
@@ -53,7 +54,7 @@ const Page = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          const { data: profile } = await supabase
+          const { data: profile } = supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
@@ -91,48 +92,53 @@ const Page = () => {
   }
 
   return (
-    <section className=" relative h-full overflow-hidden">
-      {/* Background images */}
-      {images.map((image, index) => (
-        <div key={index} className= {`absolute inset-0 transition-opacity duration-1000 ${index === current ? "opacity-100" : "opacity-0"
-        }`}>
-          <Image 
-            src={image}
-            alt={`Background ${index + 1}`}
-            fill
-            priority={index === 0} // loads first img faster
-            className="object-cover"
-          />
-        </div>
-      ))}
+    <main className=" flex flex-col h-screen">
+      <Navbar />
+      <div className=" flex-1">
+        <section className=" relative h-full overflow-hidden">
+          {/* Background images */}
+          {images.map((image, index) => (
+            <div key={index} className= {`absolute inset-0 transition-opacity duration-1000 ${index === current ? "opacity-100" : "opacity-0"
+            }`}>
+              <Image 
+                src={image}
+                alt={`Background ${index + 1}`}
+                fill
+                priority={index === 0} // loads first img faster
+                className="object-cover"
+              />
+            </div>
+          ))}
 
-      {/* Black 0verlay */}
-      <div className=" absolute inset-0 bg-black/70 z-0" />
+          {/* Black 0verlay */}
+          <div className=" absolute inset-0 bg-black/70 z-0" />
 
-      {/* Content */}
-      <div className=" relative z-10 h-full flex flex-col items-center justify-center px-4 lg:px-0">
-        <div className=" md:w-1/2 bg-primary p-10">
-          <p className=" text-center text-sm md:text-base'">
-            Imagine watching your favorite sports — football, basketball, cricket, and more — while predicting scores with 
-            accuracy and winning cash at the end of each week. There’s always a winner every week. Super Sunday isn’t just 
-            super for your team’s victory, it’s also super for your bank account. And the best part? It’s completely free! If you’re 
-            good at predictions, then this game is made for you.
-          </p>
-        </div>
-        <div className=" flex gap-4 mt-5">
-          <Button variant="default">
-            <Link href={"/login"}>
-              Login
-            </Link>
-          </Button>
-          <Button variant="outline">
-            <Link href={"/register"}>
-              Register
-            </Link>
-          </Button>
-        </div>
+          {/* Content */}
+          <div className=" relative z-10 h-full flex flex-col items-center justify-center px-4 lg:px-0">
+            <div className=" md:w-1/2 bg-primary p-10">
+              <p className=" text-center text-sm md:text-base'">
+                Imagine watching your favorite sports — football, basketball, cricket, and more — while predicting scores with 
+                accuracy and winning cash at the end of each week. There’s always a winner every week. Super Sunday isn’t just 
+                super for your team’s victory, it’s also super for your bank account. And the best part? It’s completely free! If you’re 
+                good at predictions, then this game is made for you.
+              </p>
+            </div>
+            <div className=" flex gap-4 mt-5">
+              <Button variant="default">
+                <Link href={"/login"}>
+                  Login
+                </Link>
+              </Button>
+              <Button variant="outline">
+                <Link href={"/register"}>
+                  Register
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </main>
   )
 }
 

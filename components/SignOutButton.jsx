@@ -17,7 +17,7 @@ export default function SignOutButton({ variant='default', className="" }) {
 
     return (
         <Button onClick={handleSignOut} variant={variant} className={className} aria-label="Sign out">
-            <LogOut size={16} className=" mr-2" />
+            <LogOut size={16} className="" />
             Log Out 
         </Button>
     )

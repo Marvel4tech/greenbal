@@ -48,7 +48,7 @@ const DashboardNavbar = async () => {
             <div className=' flex items-center gap-5 md:gap-10'>
                 <div className=' flex items-end gap-2'>
                     <UserIcon className=' w-5 h-5 md:w-8 md:h-8' />
-                    <h1 className=' text-sm'>
+                    <h1 className=' text-xs sm:text-sm'>
                         {greeting}, <span className=' capitalize font-medium'>{profile.username} ({profile.role})</span>
                     </h1>
                 </div>

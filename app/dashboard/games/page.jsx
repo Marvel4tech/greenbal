@@ -1,26 +1,62 @@
 'use client'
 
 import { Pencil, PlusCircle, Trash, X } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 const page = () => {
     const [games, setGames] = useState([])
+    const [loading, setLoading] = useState(false)
     const [newGames, setNewGames] = useState({homeTeam: "", awayTeam: "", matchTime: ""})
     const [showModal, setShowModal] = useState(false)
     const [selectedGames, setSelectedGames] = useState(null)
     const [result, setResult] = useState("")
 
-    // Add a new game
-    const handleAddGame = (e) => {
-        e.preventDefault();
-        if (!newGames.homeTeam || !newGames.awayTeam || !newGames.matchTime) {
-            alert("Please fill in all fields")
-            return;
+    // fetch all games on load
+    useEffect(() => {
+        const fetchGames = async () => {
+            setLoading(true)
+            try {
+                const res = await fetch("/api/games", { cache: "no-store" })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error)
+                setGames(data)
+            } catch (err) {
+                console.error("Error fetching games:", err)
+            } finally {
+                setLoading(false)
+            }
         }
 
-        const id = Date.now();
-        setGames([...games, { id, ...newGames, status: "upcoming", result: null }])
-        setNewGames({ homeTeam: "", awayTeam: "", matchTime: ""  })
+        fetchGames()
+    }, []);
+
+    // Add a new game via Next.js API
+    const handleAddGame = async (e) => {
+        e.preventDefault()
+        if (!newGames.homeTeam || !newGames.awayTeam || !newGames.matchTime) {
+            alert("Please fill in all fields")
+            return
+        }
+
+        try {
+            const res = await fetch("/api/games", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    homeTeam: newGames.homeTeam,
+                    awayTeam: newGames.awayTeam,
+                    matchTime: newGames.matchTime
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            setGames((prev) => [...prev, data])
+            setNewGames({ homeTeam: "", awayTeam: "", matchTime: "" })
+        } catch (err) {
+            alert(`Error adding game: ${err.message}`)
+        }
     }
 
     // Open modal to update result
@@ -29,20 +65,35 @@ const page = () => {
         setShowModal(true);
     };
 
+
+
     // Save result
-    const handleSaveResult = () => {
+    const handleSaveResult = async () => {
         if (!result) return;
 
-        const updated = games.map((game) => 
-            game.id == selectedGames.id 
-            ? { ...game, status: "finished", result }
-            : game
-        );
+        const res = await fetch(`/api/games/${selectedGames.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                result,
+                status: "finished"
+            })
+        })
 
-        setGames(updated);
-        setShowModal(false);
-        setResult("");
-        setSelectedGames(null);
+        const data = await res.json()
+
+        if (data.success) {
+            // Refresh the list
+            setGames((prev) => 
+                prev.map((g) => 
+                    g.id === selectedGames.id ? data.data : g
+                )
+            );
+
+            setShowModal(false);
+        } else {
+            alert("Failed to update game");
+        }
     }
 
     // Delete game
@@ -101,10 +152,10 @@ const page = () => {
                             <tr key={game.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 
                             dark:hover:bg-gray-800 transition">
                                 <td className=' p-3'>
-                                    {game.homeTeam} <span className="font-bold">vs</span>{" "} {game.awayTeam}
+                                    {game.home_team} <span className="font-bold">vs</span>{" "} {game.away_team}
                                 </td>
                                 <td className="p-3">
-                                    {new Date(game.matchTime).toLocaleString()}
+                                    {new Date(game.match_time).toLocaleString()}
                                 </td>
                                 <td className="p-3 capitalize">{game.status}</td>
                                 <td className="p-3 capitalize">

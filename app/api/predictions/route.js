@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClientWrapper } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 
 // GET: return current user's predictions (optionally filtered by game ids)
 export async function GET(request) {
@@ -43,6 +44,18 @@ export async function POST(request) {
 
     if (userError || !user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // ✅ Ensure leaderboard row exists for this user (create once)
+    const { error: lbError } = await supabaseAdmin
+        .from("leaderboard")
+        .upsert(
+            [{ user_id: user.id }],
+            { onConflict: "user_id" }
+        )
+
+    if (lbError) {
+        return NextResponse.json({ error: lbError.message }, { status: 500 })
     }
 
     let body;

@@ -1,11 +1,14 @@
+import { scoreGame } from "@/lib/scoring/scoreGame";
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { NextResponse } from "next/server";
 
 // UPDATE game result
 export async function PATCH(request, { params }) {
     try {
-        const { id } = await params;
+        const { id } = params;
         const body = await request.json();
+
+        const allowedResults = new Set(["homeWin", "draw", "awayWin"]);
 
         const { data, error } = await supabaseAdmin
             .from("games")
@@ -17,6 +20,13 @@ export async function PATCH(request, { params }) {
             .single();
 
         if (error) throw error;
+
+        // Trigger scoring ONLY when game is finished + valid result is provided
+        if (data.status === "finished" && data.result && allowedResults.has(data.result)) {
+            const scoring = await scoreGame(id);
+
+            return NextResponse.json({ success: true, data, scoring })
+        }
 
         return NextResponse.json({ success: true, data })
     } catch (error) {
@@ -31,7 +41,7 @@ export async function PATCH(request, { params }) {
 // DELETE a game
 export async function DELETE(request, { params }) {
     try {
-        const { id } = await params;
+        const { id } = params;
 
         const { error } = await supabaseAdmin
             .from("games")
@@ -43,7 +53,7 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ success: true, message: "Game deleted" })
     } catch (error) {
         console.error("Error deleting game:", error.message);
-        return NextResponse(
+        return NextResponse.json(
             { success: false, message: error.message },
             { status: 500 }
         )

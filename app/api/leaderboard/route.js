@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    const { data, error } = supabaseAdmin
+    const { data, error } = await supabaseAdmin
         .from("leaderboard")
         .select(`
             user_id,

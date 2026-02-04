@@ -41,7 +41,7 @@ export async function PATCH(request, { params }) {
 // DELETE a game
 export async function DELETE(request, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
 
         const { error } = await supabaseAdmin
             .from("games")

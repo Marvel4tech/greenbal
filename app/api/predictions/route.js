@@ -46,28 +46,16 @@ export async function POST(request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // ✅ Ensure leaderboard row exists for this user (create once)
-    const { error: lbError } = await supabaseAdmin
-        .from("leaderboard")
-        .upsert(
-            [{ user_id: user.id }],
-            { onConflict: "user_id" }
-        )
-
-    if (lbError) {
-        return NextResponse.json({ error: lbError.message }, { status: 500 })
-    }
-
     let body;
     try {
         body = await request.json();
     } catch {
-        return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+        return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     const { game_id, prediction } = body;
+    const allowed = new Set(["homeWin", "draw", "awayWin"]);
 
-    const allowed = new Set(["homeWin", "draw", "awayWin"])
     if (!game_id || !prediction || !allowed.has(prediction)) {
         return NextResponse.json(
           { error: "game_id and valid prediction are required (homeWin/draw/awayWin)" },
@@ -75,7 +63,7 @@ export async function POST(request) {
         );
     }
 
-    // 1) Check game exists and hasn't started / finished
+    // 1) Check game exists and is still open
     const { data: game, error: gameError } = await supabase
         .from("games")
         .select("id, match_time, status")
@@ -92,13 +80,11 @@ export async function POST(request) {
     if (game.status === "finished") {
         return NextResponse.json({ error: "Game already finished" }, { status: 400 });
     }
-
     if (now >= matchTime) {
         return NextResponse.json({ error: "Predictions are closed for this game" }, { status: 400 });
     }
 
-    // 2) Insert prediction (user_id default auth.uid() is fine, but we set explicitly too)
-    // NOTE: If you later create the UNIQUE index (user_id, game_id), duplicates will be blocked at DB level.
+    // 2) Insert prediction (let DB set user_id via DEFAULT auth.uid())
     const { data: inserted, error: insertError } = await supabase
         .from("predictions")
         .insert([{ user_id: user.id, game_id, prediction }])
@@ -106,14 +92,43 @@ export async function POST(request) {
         .single();
 
     if (insertError) {
-        // If unique index exists, duplicate insert typically throws 23505
-        // Supabase error codes vary, so we also check message
         const msg = insertError.message?.toLowerCase?.() || "";
         if (msg.includes("duplicate") || msg.includes("unique")) {
             return NextResponse.json({ error: "You already predicted this game" }, { status: 409 });
         }
-    
         return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    // Ensure leaderboard row exists
+    const { error: lbUpsertErr } = await supabaseAdmin
+        .from("leaderboard")
+        .upsert([{ user_id: user.id }], { onConflict: "user_id" });
+
+    if (lbUpsertErr) {
+        return NextResponse.json({ error: lbUpsertErr.message }, { status: 500 });
+    }
+
+    // Increment predictions_total by 1 (atomic using SQL update)
+    const { data: lbRow, error: lbFetchErr } = await supabaseAdmin
+        .from("leaderboard")
+        .select("predictions_total")
+        .eq("user_id", user.id)
+        .single();
+
+    if (lbFetchErr) {
+        return NextResponse.json({ error: lbFetchErr.message }, { status: 500 });
+    }
+
+    const { error: lbUpdateErr } = await supabaseAdmin
+        .from("leaderboard")
+        .update({
+            predictions_total: (lbRow.predictions_total ?? 0) + 1,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+    if (lbUpdateErr) {
+        return NextResponse.json({ error: lbUpdateErr.message }, { status: 500 });
     }
 
     return NextResponse.json(inserted, { status: 201 });

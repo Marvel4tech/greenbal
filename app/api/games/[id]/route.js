@@ -24,15 +24,13 @@ export async function PATCH(request, { params }) {
         // Trigger scoring ONLY when game is finished + valid result is provided
         if (data.status === "finished" && data.result && allowedResults.has(data.result)) {
             const scoring = await scoreGame(id);
-
             return NextResponse.json({ success: true, data, scoring })
         }
 
         return NextResponse.json({ success: true, data })
     } catch (error) {
-        console.log("Error updating game:", error.message)
         return NextResponse.json(
-            { success: false, message: error.message },
+            { success: false, message: `Game updated, but scoring failed: ${e.message}` },
             { status: 500 }
         )
     }

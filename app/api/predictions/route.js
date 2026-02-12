@@ -99,6 +99,22 @@ export async function POST(request) {
         return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
+    // after you validated game + inserted prediction...
+    const { data: weekStart, error: weekErr } = await supabaseAdmin
+        .rpc("week_start_tuesday", { ts: game.match_time });
+
+    if (weekErr) return NextResponse.json({ error: weekErr.message }, { status: 500 });
+
+    const { error: rpcErr } = await supabaseAdmin.rpc("leaderboard_weekly_apply_delta", {
+    p_user_id: user.id,
+    p_week_start: weekStart,
+    p_delta_points: 0,
+    p_delta_correct: 0,
+    p_delta_predictions: 1,
+    });
+
+    if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 });
+
     // Ensure leaderboard row exists
     const { error: lbUpsertErr } = await supabaseAdmin
         .from("leaderboard")

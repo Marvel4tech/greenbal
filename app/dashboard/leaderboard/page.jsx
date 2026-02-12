@@ -41,7 +41,7 @@ const Page = () => {
             .channel("leaderboard-live")
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'leaderboard' },
+                { event: '*', schema: 'public', table: 'leaderboard_weekly' },
                 () => {
                     // show toast immediately
                     setIsUpdating(true)

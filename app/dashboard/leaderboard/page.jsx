@@ -1,30 +1,72 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-const page = () => {
+const Page = () => {
     const [players, setPlayers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const [isUpdating, setIsUpdating] = useState(false)
 
-    useEffect(() => {
-        const fetchLeaderboard = async () => {
-            try {
-                setLoading(true)
-                setError("")
-                const res = await fetch('/api/leaderboard', { cache: "no-store" })
-                const data = await res.json()
-                if (!res.ok) throw new Error(data?.error || "Failed to fetch leaderboard")
-                setPlayers(data || [])
-            } catch (error) {
-                setError(error.message)
-            } finally {
-                setLoading(false)
-            }
+    // small debounce so multiple row updates don’t spam fetches
+    const debounceRef = useRef(null)
+    const hideToastRef = useRef(null)
+
+    const fetchLeaderboard = useCallback(async () =>  {
+        try {
+            setError("")
+            const res = await fetch('/api/leaderboard', { cache: 'no-store' })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data?.error || 'Failed to fetch leaderboard')
+            setPlayers(data || [])
+        } catch (error) {
+            setError(error.message)
+        } finally {
+            setLoading(false)
         }
-
-        fetchLeaderboard()
     }, [])
+
+    // Initial fetch
+    useEffect(() => {
+        setLoading(true)
+        fetchLeaderboard()
+    }, [fetchLeaderboard])
+
+    // Realtime subscription
+    useEffect(() => {
+        const supabase = createClient()
+
+        const channel = supabase
+            .channel("leaderboard-live")
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'leaderboard_weekly' },
+                () => {
+                    // show toast immediately
+                    setIsUpdating(true)
+
+                    // debounce re-fetch to avoid 10 fetches if many users scored at once
+                    if (debounceRef.current) clearTimeout(debounceRef.current)
+                        debounceRef.current = setTimeout(() => {
+                          fetchLeaderboard()
+                    }, 250)
+
+                    // auto-hide toast a bit after last event
+                    if (hideToastRef.current) clearTimeout(hideToastRef.current)
+                        hideToastRef.current = setTimeout(() => {
+                        setIsUpdating(false)
+                    }, 1200)
+                }
+            )
+            .subscribe()
+
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+            if (hideToastRef.current) clearTimeout(hideToastRef.current)
+            supabase.removeChannel(channel)
+        }
+    }, [fetchLeaderboard])
 
     const highestPoint = useMemo(
         () => (players.length ? Math.max(...players.map((p) => p.points || 0)) : 0),
@@ -33,6 +75,13 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+        {/* ✅ Live updating toast */}
+        {isUpdating && (
+            <div className="fixed bottom-6 right-6 z-50 bg-black text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg">
+            Updating leaderboard…
+            </div>
+        )}
+
         <h1 className="text-2xl font-bold mb-6 text-center md:text-left">
             Leaderboard
         </h1>
@@ -116,4 +165,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page

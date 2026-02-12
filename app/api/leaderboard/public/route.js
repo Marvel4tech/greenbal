@@ -6,7 +6,6 @@ export async function GET(request) {
     const url = new URL(request.url);
 
     // Optional: allow fetching a specific week
-    // e.g. /api/leaderboard?week_start=2026-02-04
     let weekStart = url.searchParams.get("week_start") || null;
 
     // Default: current week (Tue -> Mon) in UTC
@@ -19,7 +18,6 @@ export async function GET(request) {
         return NextResponse.json({ error: weekErr.message }, { status: 500 });
       }
 
-      // Supabase returns the function result in `data`
       weekStart = data;
     }
 
@@ -29,12 +27,9 @@ export async function GET(request) {
         user_id,
         week_start,
         points_total,
-        correct_total,
-        predictions_total,
         updated_at,
         profiles:profiles (
-          username,
-          email
+          username
         )
       `)
       .eq("week_start", weekStart)
@@ -49,11 +44,8 @@ export async function GET(request) {
       id: r.user_id,
       week_start: r.week_start,
       name: r.profiles?.username || "Unknown",
-      email: r.profiles?.email || "",
       points: r.points_total ?? 0,
-      correct_total: r.correct_total ?? 0,
-      predictions_total: r.predictions_total ?? 0,
-      updated_at: r.updated_at,
+      duration: "—", // later
     }));
 
     return NextResponse.json(rows);

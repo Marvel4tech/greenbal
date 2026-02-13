@@ -5,22 +5,28 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
 
-    // Optional: allow fetching a specific week
-    // e.g. /api/leaderboard?week_start=2026-02-04
+    const weekQuery = url.searchParams.get("week"); // "current" | null
     let weekStart = url.searchParams.get("week_start") || null;
 
-    // Default: current week (Tue -> Mon) in UTC
-    if (!weekStart) {
-      const { data, error: weekErr } = await supabaseAdmin.rpc("week_start_tuesday", {
+    // helper to get current week_start (Tue -> Mon UTC) from RPC
+    const getCurrentWeekStart = async () => {
+      const { data, error } = await supabaseAdmin.rpc("week_start_tuesday", {
         ts: new Date().toISOString(),
       });
+      if (error) throw new Error(error.message);
+      return data; // "YYYY-MM-DD"
+    };
 
-      if (weekErr) {
-        return NextResponse.json({ error: weekErr.message }, { status: 500 });
-      }
+    // ✅ Mode A: /api/leaderboard?week=current -> return { week_start }
+    if (weekQuery === "current") {
+      const current = await getCurrentWeekStart();
+      return NextResponse.json({ week_start: current });
+    }
 
-      // Supabase returns the function result in `data`
-      weekStart = data;
+    // ✅ Mode B: /api/leaderboard?week_start=YYYY-MM-DD -> fetch that week
+    // ✅ Default: current week if not provided
+    if (!weekStart) {
+      weekStart = await getCurrentWeekStart();
     }
 
     const { data, error } = await supabaseAdmin
@@ -45,7 +51,8 @@ export async function GET(request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const rows = (data || []).map((r) => ({
+    const rows = (data || []).map((r, i) => ({
+      rank: i + 1,
       id: r.user_id,
       week_start: r.week_start,
       name: r.profiles?.username || "Unknown",

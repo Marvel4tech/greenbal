@@ -1,8 +1,11 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const geistSans = Geist({
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" })
+
+/*const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
@@ -10,7 +13,7 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
+});*/
 
 export const metadata = {
   title: "greenbal",
@@ -19,8 +22,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${space.variable}`}>
+      <body className="font-sans">
         <ThemeProvider>
           {children} 
         </ThemeProvider>

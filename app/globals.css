@@ -120,3 +120,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+:root {
+  --font-inter: ui-sans-serif;
+  --font-space: ui-sans-serif;
+}
+
+body {
+  font-family: var(--font-inter);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-space);
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+

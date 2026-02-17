@@ -7,14 +7,11 @@ import { Edit2Icon, Mail, MapPin, Phone, Landmark, User2 } from "lucide-react"
 
 const emptyToDash = (v) => (v ? v : "—")
 
-const ProfileUserCard = () => {
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+const ProfileUserCard = ({ profile, onProfileUpdated }) => {
   const [error, setError] = useState("")
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // form state (editable)
   const [form, setForm] = useState({
     full_name: "",
     username: "",
@@ -27,56 +24,59 @@ const ProfileUserCard = () => {
     avatar_url: "",
   })
 
+  // keep form synced whenever profile changes
+  useEffect(() => {
+    if (!profile) return
+    setForm({
+      full_name: profile?.full_name || "",
+      username: profile?.username || "",
+      country: profile?.country || "",
+      phone: profile?.phone || "",
+      gender: profile?.gender || "",
+      bank_name: profile?.bank_name || "",
+      bank_account: profile?.bank_account || "",
+      cover_url: profile?.cover_url || "",
+      avatar_url: profile?.avatar_url || "",
+    })
+  }, [profile])
+
+  // ✅ lock background scroll when modal open (mobile friendly)
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
   const initials = useMemo(() => {
     const name = profile?.full_name || profile?.username || profile?.email || "U"
     return name?.[0]?.toUpperCase?.() || "U"
   }, [profile])
 
-  const fetchProfile = async () => {
-    try {
-      setError("")
-      setLoading(true)
-      const res = await fetch("/api/profile", { cache: "no-store" })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || "Failed to load profile")
-      setProfile(data)
-
-      // preload form
-      setForm({
-        full_name: data?.full_name || "",
-        username: data?.username || "",
-        country: data?.country || "",
-        phone: data?.phone || "",
-        gender: data?.gender || "",
-        bank_name: data?.bank_name || "",
-        bank_account: data?.bank_account || "",
-        cover_url: data?.cover_url || "",
-        avatar_url: data?.avatar_url || "",
-      })
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchProfile()
-  }, [])
-
   const saveProfile = async () => {
     try {
       setSaving(true)
       setError("")
+
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       })
-      const data = await res.json()
+
+      const text = await res.text()
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error("API did not return valid JSON")
+      }
+
       if (!res.ok) throw new Error(data?.error || "Failed to save profile")
 
-      setProfile(data)
+      onProfileUpdated?.(data)
       setOpen(false)
     } catch (e) {
       setError(e.message)
@@ -98,7 +98,13 @@ const ProfileUserCard = () => {
         <div className="absolute -bottom-8 left-5">
           <div className="w-16 h-16 rounded-2xl bg-white dark:bg-black shadow-lg border border-white/60 dark:border-white/10 flex items-center justify-center overflow-hidden">
             {profile?.avatar_url ? (
-              <Image src={profile.avatar_url} alt="Avatar" width={64} height={64} className="object-cover w-full h-full" />
+              <Image
+                src={profile.avatar_url}
+                alt="Avatar"
+                width={64}
+                height={64}
+                className="object-cover w-full h-full"
+              />
             ) : (
               <span className="text-lg font-bold text-primary">{initials}</span>
             )}
@@ -108,10 +114,8 @@ const ProfileUserCard = () => {
 
       {/* Content */}
       <div className="p-6 pt-12">
-        {loading && <p className="text-sm text-gray-500">Loading profile...</p>}
-        {!loading && error && <p className="text-sm text-red-500">{error}</p>}
-
-        {!loading && profile && (
+        {!profile && <p className="text-sm text-gray-500">Loading profile…</p>}
+        {profile && (
           <>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -121,7 +125,7 @@ const ProfileUserCard = () => {
                 </p>
               </div>
 
-              <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+              <Button size="sm" className="gap-2" onClick={() => setOpen(true)} disabled={!profile}>
                 <Edit2Icon className="w-4 h-4" />
                 Edit Profile
               </Button>
@@ -173,38 +177,46 @@ const ProfileUserCard = () => {
         )}
       </div>
 
-      {/* Edit modal */}
+      {/* ✅ Edit modal (fixed for mobile) */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl">
-            <div className="p-5 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold">Edit profile</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Fill what you want — you can update anytime.
-              </p>
-            </div>
+        <div className="fixed inset-0 z-[999] bg-black/60 px-4 py-6 md:py-0">
+          {/* Center on desktop, full-height on mobile */}
+          <div className="mx-auto h-full md:h-auto md:max-w-lg md:flex md:items-center md:justify-center">
+            <div className="w-full h-full md:h-auto md:max-h-[85vh] rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold">Edit profile</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Fill what you want — you can update anytime.
+                </p>
+              </div>
 
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input label="Full name" value={form.full_name} onChange={(v) => setForm((s) => ({ ...s, full_name: v }))} />
-              <Input label="Username" value={form.username} onChange={(v) => setForm((s) => ({ ...s, username: v }))} />
-              <Input label="Country" value={form.country} onChange={(v) => setForm((s) => ({ ...s, country: v }))} />
-              <Input label="Phone" value={form.phone} onChange={(v) => setForm((s) => ({ ...s, phone: v }))} />
-              <Input label="Gender" value={form.gender} onChange={(v) => setForm((s) => ({ ...s, gender: v }))} />
-              <Input label="Bank name" value={form.bank_name} onChange={(v) => setForm((s) => ({ ...s, bank_name: v }))} />
-              <Input label="Bank account" value={form.bank_account} onChange={(v) => setForm((s) => ({ ...s, bank_account: v }))} />
-              <Input label="Cover URL (optional)" value={form.cover_url} onChange={(v) => setForm((s) => ({ ...s, cover_url: v }))} />
-              <Input label="Avatar URL (optional)" value={form.avatar_url} onChange={(v) => setForm((s) => ({ ...s, avatar_url: v }))} />
-            </div>
+              {/* ✅ Scrollable body */}
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto flex-1">
+                <Input label="Full name" value={form.full_name} onChange={(v) => setForm((s) => ({ ...s, full_name: v }))} />
+                <Input label="Username" value={form.username} onChange={(v) => setForm((s) => ({ ...s, username: v }))} />
+                <Input label="Country" value={form.country} onChange={(v) => setForm((s) => ({ ...s, country: v }))} />
+                <Input label="Phone" value={form.phone} onChange={(v) => setForm((s) => ({ ...s, phone: v }))} />
+                <Input label="Gender" value={form.gender} onChange={(v) => setForm((s) => ({ ...s, gender: v }))} />
+                <Input label="Bank name" value={form.bank_name} onChange={(v) => setForm((s) => ({ ...s, bank_name: v }))} />
+                <Input label="Bank account" value={form.bank_account} onChange={(v) => setForm((s) => ({ ...s, bank_account: v }))} />
+                <Input label="Cover URL (optional)" value={form.cover_url} onChange={(v) => setForm((s) => ({ ...s, cover_url: v }))} />
+                <Input label="Avatar URL (optional)" value={form.avatar_url} onChange={(v) => setForm((s) => ({ ...s, avatar_url: v }))} />
+              </div>
 
-            {error && <p className="px-5 pb-2 text-sm text-red-500">{error}</p>}
+              {error && <p className="px-5 pb-2 text-sm text-red-500">{error}</p>}
 
-            <div className="p-5 flex items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
-                Cancel
-              </Button>
-              <Button onClick={saveProfile} disabled={saving}>
-                {saving ? "Saving..." : "Save changes"}
-              </Button>
+              {/* ✅ Sticky footer + safe bottom padding for mobile nav */}
+              <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-5 flex items-center justify-end gap-2 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-5">
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+                    Cancel
+                  </Button>
+                  <Button onClick={saveProfile} disabled={saving}>
+                    {saving ? "Saving..." : "Save changes"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 // UPDATE game result
 export async function PATCH(request, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const body = await request.json();
 
         const allowedResults = new Set(["homeWin", "draw", "awayWin"]);
@@ -30,7 +30,7 @@ export async function PATCH(request, { params }) {
         return NextResponse.json({ success: true, data })
     } catch (error) {
         return NextResponse.json(
-            { success: false, message: `Game updated, but scoring failed: ${e.message}` },
+            { success: false, message: `Game updated, but scoring failed: ${error.message}` },
             { status: 500 }
         )
     }

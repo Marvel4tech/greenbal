@@ -33,7 +33,7 @@ const Page = () => {
           {/* Contact card */}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black/50 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              Reach Sportscash18
+              Reach greenball360
             </h2>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
               We’re based in <span className="font-semibold">South London</span>. For the fastest help,

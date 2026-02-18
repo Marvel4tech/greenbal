@@ -23,7 +23,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${space.variable}`}>
-      <body className="font-sans">
+      <body className={`${inter.variable} ${space.variable} font-sans`}>
         <ThemeProvider>
           {children} 
         </ThemeProvider>

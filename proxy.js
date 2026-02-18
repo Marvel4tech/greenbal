@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClientWrapper } from "./lib/supabase/server";
 
-export async function middleware(request) {
+export async function proxy(request) {
   const response = NextResponse.next()  // create response object
   const supabase = await createServerClientWrapper()  // get server supabase client
   const { data: { user } } = await supabase.auth.getUser()  // get current user

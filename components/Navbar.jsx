@@ -14,7 +14,7 @@ const Navbar = () => {
 
   const navlinks = [
     { href: "/", label: "Home" },
-    { href: "/table", label: "Table" },
+    { href: "/leaderboard", label: "Leaderboard" },
     { href: "/contact", label: "Contact Us" },
     { href: "/about", label: "About Us" },
   ]
@@ -58,8 +58,8 @@ const Navbar = () => {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2 group">
           <FaFutbol className="text-3xl text-primary group-hover:rotate-12 transition" />
-          <span className="font-light py-1 px-2 rounded-3xl border-1 border-primary text-white tracking-wide text-lg hidden sm:block">
-            greenbal
+          <span className="font-light py-1 px-2 rounded-3xl border-1 border-primary text-white tracking-wide text-sm hidden sm:block">
+            greenball360
           </span>
         </Link>
 

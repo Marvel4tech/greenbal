@@ -140,7 +140,7 @@ const Page = () => {
                 </h1>
 
                 <p className="mt-4 text-white/80 text-sm md:text-base leading-relaxed">
-                  greenbal is a free prediction game. Pick match outcomes daily, climb the weekly leaderboard,
+                  greenball360 is a free prediction game. Pick match outcomes daily, climb the weekly leaderboard,
                   and compete for rewards. Fast, fair, and built for serious predictors.
                 </p>
 
@@ -234,7 +234,7 @@ const Page = () => {
               <p className="text-sm text-white/80">
                 “Simple to use, addictive to play — and the leaderboard feels alive.”
               </p>
-              <p className="text-xs text-white/60">— greenbal early testers</p>
+              <p className="text-xs text-white/60">— greenball360 early testers</p>
             </div>
           </div>
 

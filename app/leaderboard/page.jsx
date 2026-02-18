@@ -342,7 +342,7 @@ const Page = () => {
                                 <span
                                   className={`inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-bold ${meta.badge}`}
                                 >
-                                  #{p.rank}
+                                  {p.rank}
                                 </span>
                               </td>
 

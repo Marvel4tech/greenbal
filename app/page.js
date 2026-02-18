@@ -34,10 +34,12 @@ const Page = () => {
   const [loading, setLoading] = useState(true)
 
   // Auth redirect
-  useEffect(() => {
-    let isMounted = true
+  // Auth redirect (never hang)
+useEffect(() => {
+  let isMounted = true
 
-    const redirectUser = async (u) => {
+  const redirectUser = async (u) => {
+    try {
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("role")
@@ -46,37 +48,56 @@ const Page = () => {
 
       const role = error ? null : profile?.role
       const redirectPath = role === "admin" ? "/dashboard" : "/profile"
-      router.push(redirectPath)
+      router.replace(redirectPath) // ✅ replace avoids back button loops
+    } catch (e) {
+      console.error("redirectUser error:", e)
+      // if something fails, allow homepage to render
+      if (isMounted) setLoading(false)
     }
+  }
 
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser()
-      const u = data?.user
+  const checkAuth = async () => {
+    // ✅ Safety timeout so spinner can NEVER be infinite
+    const safety = setTimeout(() => {
+      if (isMounted) setLoading(false)
+    }, 3000)
+
+    try {
+      // ✅ getSession is more reliable than getUser in some cases
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+
+      const u = data?.session?.user
 
       if (u) {
         await redirectUser(u)
         return
       }
-
+    } catch (e) {
+      console.error("checkAuth error:", e)
+    } finally {
+      clearTimeout(safety)
       if (isMounted) setLoading(false)
     }
+  }
 
-    checkAuth()
+  checkAuth()
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const u = session?.user
-      if (u) {
-        await redirectUser(u)
-      } else {
-        if (isMounted) setLoading(false)
-      }
-    })
-
-    return () => {
-      isMounted = false
-      listener?.subscription?.unsubscribe()
+  const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const u = session?.user
+    if (u) {
+      await redirectUser(u)
+    } else {
+      if (isMounted) setLoading(false)
     }
-  }, [supabase, router])
+  })
+
+  return () => {
+    isMounted = false
+    listener?.subscription?.unsubscribe()
+  }
+}, [supabase, router])
+
 
   // Background slideshow
   useEffect(() => {
@@ -302,7 +323,7 @@ const Page = () => {
 function HeroVisual() {
   // Put this file in /public/images/hero-sports.jpg
   // Fallback is a greenbul image so it never breaks
-  const heroSrc = "/images/heroVisual.jpeg"
+  const [heroSrc, setHeroSrc] = useState("/images/heroVisual.jpeg")
 
   return (
     <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/5 shadow-2xl">
@@ -312,10 +333,7 @@ function HeroVisual() {
           alt="Sporty hero"
           fill
           className="object-cover"
-          onError={(e) => {
-            // Fallback (safe): swap src if hero image isn't available yet
-            e.currentTarget.src = "/images/greenbul2.jpg"
-          }}
+          onError={() => setHeroSrc("/images/greenbul2.jpg")}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       </div>

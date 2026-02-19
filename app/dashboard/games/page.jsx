@@ -246,62 +246,129 @@ const page = () => {
             {!loading && error && <p className="text-center text-red-500">{error}</p>}
 
             {!loading && !error && (games.length > 0 ? (
-                <div className="bg-white dark:bg-black/50 rounded-xl shadow-md overflow-x-auto">
-                    <table className="w-full text-sm">
+                <div className="bg-white dark:bg-black/50 rounded-xl shadow-md">
+                    {/* Add horizontal scroll container with better padding for mobile */}
+                    <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[700px] md:min-w-full">
                         <thead className="bg-primary text-white">
                             <tr>
-                                <th className="p-3 text-left">Match</th>
-                                <th className="p-3 text-left">Time</th>
-                                <th className="p-3 text-left">Status</th>
-                                <th className="p-3 text-left">Result</th>
-                                <th className="p-3 text-center">Actions</th>
+                                <th className="p-4 text-left whitespace-nowrap">Match</th>
+                                <th className="p-4 text-left whitespace-nowrap">Time</th>
+                                <th className="p-4 text-left whitespace-nowrap">Status</th>
+                                <th className="p-4 text-left whitespace-nowrap">Result</th>
+                                <th className="p-4 text-center whitespace-nowrap">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {games.map((game) => (
-                                <tr key={game.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 
-                                dark:hover:bg-gray-800 transition">
-                                    <td className='p-3'>
-                                        {game.home_team} <span className="font-bold">vs</span>{" "} {game.away_team}
-                                    </td>
-                                    <td className="p-3">
-                                        {new Date(game.match_time).toLocaleString('en-GB', { timeZone: TZ })}
-                                    </td>
-                                    <td className="p-3 capitalize">{game.status}</td>
-                                    <td className="p-3 capitalize">
-                                        {game.result ? (
-                                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                                game.result === 'homeWin'
-                                                  ? "bg-green-200 text-green-700"
-                                                  : game.result === "draw"
-                                                  ? "bg-yellow-200 text-yellow-700"
-                                                  : "bg-red-200 text-red-700"
-                                            }`}>
-                                                {game.result === 'homeWin'
-                                                    ? "Home Win"
-                                                    : game.result === "draw"
-                                                    ? "Draw"
-                                                    : "Away Win"
-                                                }
-                                            </span>
-                                        ) : (
-                                            "—"
-                                        )}
-                                    </td>
-                                    <td className="p-3">
-                                        <div className="flex items-center justify-center gap-3">
-                                            <button onClick={() => openModal(game)} className="text-blue-500 hover:text-blue-700">
-                                                <Pencil size={18} />
-                                            </button>
-                                            <button onClick={() => handleDelete(game.id)} className="text-red-500 hover:text-red-700">
-                                                <Trash size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                        {games.map((game) => (
+                            <tr 
+                            key={game.id} 
+                            className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            >
+                            <td className="p-4">
+                                <div className="flex flex-col min-w-[180px]">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium truncate max-w-[100px]">{game.home_team}</span>
+                                    <span className="text-xs font-bold text-gray-500">vs</span>
+                                    <span className="font-medium truncate max-w-[100px]">{game.away_team}</span>
+                                </div>
+                                </div>
+                            </td>
+                            
+                            <td className="p-4">
+                                <div className="flex flex-col min-w-[140px]">
+                                <span className="font-medium">
+                                    {new Date(game.match_time).toLocaleString('en-GB', { 
+                                    timeZone: TZ,
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                    })}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    {new Date(game.match_time).toLocaleString('en-GB', { 
+                                    timeZone: TZ,
+                                    weekday: 'short'
+                                    })}
+                                </span>
+                                </div>
+                            </td>
+                            
+                            <td className="p-4">
+                                <div className="min-w-[90px]">
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize inline-block
+                                    ${game.status === 'completed' 
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                    : game.status === 'live' 
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 animate-pulse'
+                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                                    }`}
+                                >
+                                    {game.status}
+                                </span>
+                                </div>
+                            </td>
+                            
+                            <td className="p-4">
+                                <div className="min-w-[100px]">
+                                {game.result ? (
+                                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-block ${
+                                    game.result === 'homeWin'
+                                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                        : game.result === "draw"
+                                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                                        : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                    }`}>
+                                    {game.result === 'homeWin'
+                                        ? "Home Win"
+                                        : game.result === "draw"
+                                        ? "Draw"
+                                        : "Away Win"
+                                    }
+                                    </span>
+                                ) : (
+                                    <span className="text-gray-400 italic">Not played</span>
+                                )}
+                                </div>
+                            </td>
+                            
+                            <td className="p-4">
+                                <div className="flex items-center justify-center gap-3 min-w-[100px]">
+                                <button 
+                                    onClick={() => openModal(game)} 
+                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                    title="Edit match"
+                                >
+                                    <Pencil size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(game.id)} 
+                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                    title="Delete match"
+                                >
+                                    <Trash size={18} />
+                                </button>
+                                </div>
+                            </td>
+                            </tr>
+                        ))}
+                        
+                        {games.length === 0 && (
+                            <tr>
+                            <td colSpan={5} className="p-8 text-center text-gray-500">
+                                No matches found.
+                            </td>
+                            </tr>
+                        )}
                         </tbody>
                     </table>
+                    </div>
+                    
+                    {/* Scroll hint for mobile */}
+                    <div className="mt-2 pb-2 text-xs text-gray-400 text-center md:hidden">
+                    ← Swipe horizontally to see more →
+                    </div>
                 </div>
             ): (
                 <p className="text-center text-gray-500 mt-10">

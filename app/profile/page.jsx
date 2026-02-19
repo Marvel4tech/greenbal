@@ -13,6 +13,13 @@ const Page = () => {
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileError, setProfileError] = useState("")
 
+  const siderlinks = [
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
+    { label: 'Play', href: '/profile/play', icon: Gamepad2 },
+    { label: 'News', href: '/profile/news', icon: Newspaper },
+  ]
+
   const loadProfile = useCallback(async () => {
     try {
       setProfileError("")

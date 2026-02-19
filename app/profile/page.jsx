@@ -3,23 +3,11 @@
 import ProfileUserCard from '@/components/ProfileUserCard'
 import ProfileCompletionMeter from '@/components/ProfileCompletionMeter'
 import SignOutButton from '@/components/SignOutButton'
-import { Gamepad2, InfoIcon, LogIn, Newspaper, Timer, Trophy, User2, Settings } from 'lucide-react'
+import { Gamepad2, LogIn, Timer, Trophy, User2, Settings } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
 
 const Page = () => {
-  const pathname = usePathname()
-
-  const siderlinks = [
-    { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
-    { label: 'Play', href: '/profile/play', icon: Gamepad2 },
-    { label: 'Help', href: '/profile/assistance', icon: InfoIcon },
-    { label: 'News', href: '/profile/news', icon: Newspaper },
-  ]
-
-  const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')
-
   // profile state owned here (so meter updates instantly)
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -234,33 +222,6 @@ const Page = () => {
           </div>
         </div>
       </main>
-
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-        <div className="mx-auto max-w-7xl px-4 pb-4">
-          <div className="bg-white/90 dark:bg-black/80 backdrop-blur border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg">
-            <div className="grid grid-cols-4 items-center">
-              {siderlinks.map(({ label, href, icon: Icon }) => {
-                const active = isActive(href)
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`flex flex-col items-center justify-center gap-1 py-3 transition rounded-2xl
-                      ${active ? "text-primary" : "text-gray-600 dark:text-gray-300"}
-                    `}
-                  >
-                    <div className={`p-2 rounded-xl transition ${active ? "bg-green-100 dark:bg-white/10" : "bg-transparent"}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-medium leading-none">{label}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

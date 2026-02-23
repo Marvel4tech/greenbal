@@ -33,8 +33,10 @@ const dummyNews = [
     },
 ];
 
-const page = ({ params }) => {
-    const newsId = parseInt(params.id)
+const page = async ({ params }) => {
+    // Await the params Promise
+    const unwrappedParams = await params
+    const newsId = parseInt(unwrappedParams.id)
     const article = dummyNews.find((n) => n.id === newsId);
 
     if(!article) {
@@ -47,34 +49,40 @@ const page = ({ params }) => {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 md:px-10 py-6 md:py-10">
-        <div className="max-w-3xl mx-auto bg-white dark:bg-black/70 border rounded-lg shadow-lg overflow-hidden">
-            {/* Back Button */}
-            <div className=' p-4'>
-                <Link href="/profile/news" className="flex items-center text-green-600 dark:text-green-400 hover:underline text-sm mb-2">
-                    <ArrowLeft className="w-4 h-4 mr-1"/> Back to News
+        <div className="max-w-3xl mx-auto">
+            {/* Desktop back button - only visible on desktop */}
+            <div className="hidden md:block mb-4">
+                <Link 
+                    href="/profile/news" 
+                    className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span>Back to News</span>
                 </Link>
             </div>
 
-            {/* Image */}
-            <div className="relative w-full h-64 md:h-96">
-                <Image 
-                    src={article.image}
-                    alt={article.title}
-                    fill
-                    className=' object-cover'
-                />
-            </div>
+            <div className="bg-white dark:bg-black/70 border rounded-lg shadow-lg overflow-hidden">
+                {/* Image */}
+                <div className="relative w-full h-64 md:h-96">
+                    <Image 
+                        src={article.image}
+                        alt={article.title}
+                        fill
+                        className=' object-cover'
+                    />
+                </div>
 
-            {/* Article Content */}
-            <div className="p-6 md:p-8">
-                <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                    {article.title}
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                    {article.date}
-                </p>
-                <div className="text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-line">
-                    {article.content}
+                {/* Article Content */}
+                <div className="p-6 md:p-8">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                        {article.title}
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+                        {article.date}
+                    </p>
+                    <div className="text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-line">
+                        {article.content}
+                    </div>
                 </div>
             </div>
         </div>

@@ -49,15 +49,6 @@ export const metadata = {
       "Predict match outcomes, climb the leaderboard, and win weekly.",
     images: ["/images/og-cover.jpg"],
   },
-
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '32x32' },
-    ],
-    apple: '/apple-touch-icon.png',
-    shortcut: '/favicon.ico',
-  },
 }
 
 

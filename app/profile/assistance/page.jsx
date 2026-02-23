@@ -1,4 +1,6 @@
 import React from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const matches = [
   {
@@ -43,11 +45,29 @@ const matches = [
 ]
 
 const page = () => {
-
+  
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 py-6 md:px-10 md:py-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Game Assistance</h1>
+        {/* Back button - only visible on desktop */}
+        <div className="hidden md:flex items-center justify-between">
+          <Link 
+            href="/profile" 
+            className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Dashboard</span>
+          </Link>
+          
+          <h1 className="text-2xl font-bold text-center flex-1">Game Assistance</h1>
+          
+          {/* Empty div for flex spacing */}
+          <div className="w-20"></div>
+        </div>
+
+        {/* Mobile title - only visible on mobile */}
+        <h1 className="text-2xl font-bold text-center md:hidden">Game Assistance</h1>
+
         {matches.map((match) => (
           <section key={match.id} className="bg-white dark:bg-black/70 border rounded-lg shadow-md p-4 md:p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3">

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const TZ = 'Europe/London'
 
@@ -50,7 +52,7 @@ const Page = () => {
   const [savingGameId, setSavingGameId] = useState(null)
   const [now, setNow] = useState(new Date())
 
-  // ✅ Date browsing (defaults to today in UK)
+  // Date browsing (defaults to today in UK)
   const [selectedDate, setSelectedDate] = useState(() => todayYMD())
   const today = useMemo(() => todayYMD(), [])
   const isToday = selectedDate === today
@@ -63,7 +65,7 @@ const Page = () => {
     return () => clearInterval(interval)
   }, [])
 
-  // ✅ Fetch games whenever selectedDate changes
+  // Fetch games whenever selectedDate changes
   useEffect(() => {
     const fetchGames = async () => {
       try {
@@ -97,7 +99,7 @@ const Page = () => {
     fetchGames()
   }, [selectedDate, isToday])
 
-  // ✅ Fetch user predictions for games on this page (so refresh stays locked)
+  // Fetch user predictions for games on this page (so refresh stays locked)
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
@@ -196,6 +198,17 @@ const Page = () => {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      {/* Desktop back button - only visible on desktop */}
+      <div className="hidden md:block mb-6">
+        <Link 
+          href="/profile" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Dashboard</span>
+        </Link>
+      </div>
+
       {/* Header + date nav */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

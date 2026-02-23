@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import { ArrowLeft } from 'lucide-react'
 
 const dummyNews = [
   {
@@ -42,6 +43,17 @@ const page = () => {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 py-6 md:px-10 md:py-8">
       <div className="max-w-6xl mx-auto">
+        {/* Desktop back button - only visible on desktop */}
+        <div className="hidden md:block mb-6">
+          <Link 
+            href="/profile" 
+            className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Dashboard</span>
+          </Link>
+        </div>
+
         <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center">
           Football News & Updates
         </h1>

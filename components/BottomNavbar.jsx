@@ -13,6 +13,7 @@ const Page = () => {
     { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
     { label: 'News', href: '/profile/news', icon: Newspaper },
+    { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
   ]
 
   const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')

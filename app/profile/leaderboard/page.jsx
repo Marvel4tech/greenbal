@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/client'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 function parseWeekStartToUTCDate(weekStartStr) {
   // weekStartStr like "2026-02-10"
@@ -171,6 +173,17 @@ const Page = () => {
         )}
       </AnimatePresence>
 
+      {/* Desktop back button - only visible on desktop */}
+      <div className="w-full max-w-4xl mb-4 hidden md:block">
+        <Link 
+          href="/profile" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Dashboard</span>
+        </Link>
+      </div>
+
       {/* Sticky “Your Rank” */}
       {stickyVisible && (
         <div className="sticky top-16 z-40 w-full max-w-4xl mb-3">
@@ -203,7 +216,7 @@ const Page = () => {
             Top performers based on total points and fastest completion time.
           </p>
 
-          {/* ✅ Week controls */}
+          {/* Week controls */}
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="text-xs text-gray-600 dark:text-gray-300">
               <span className="font-semibold">Week:</span> {weekLabel}
@@ -252,7 +265,6 @@ const Page = () => {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Rank</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Name</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Points</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Duration</th>
                 </tr>
               </thead>
 
@@ -309,7 +321,6 @@ const Page = () => {
                         </td>
 
                         <td className="px-6 py-3 text-gray-700 dark:text-gray-200">{player.points}</td>
-                        <td className="px-6 py-3 text-gray-700 dark:text-gray-200">{player.duration || '—'}</td>
                       </motion.tr>
                     )
                   })}

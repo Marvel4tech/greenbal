@@ -2,6 +2,8 @@
 
 import { Database, FileDown, RefreshCw, Trash2 } from 'lucide-react';
 import React, { useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const page = () => {
     const [logs, setLogs] = useState([
@@ -24,6 +26,17 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+        {/* Back button - visible on all devices */}
+        <div className="mb-2">
+            <Link 
+                href="/dashboard" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+            >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Back to Dashboard</span>
+            </Link>
+        </div>
+
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">System Tools</h1>

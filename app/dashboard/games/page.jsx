@@ -2,6 +2,8 @@
 
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, PlusCircle, Trash, X } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 // functions begins
 const TZ = 'Europe/London'
@@ -183,6 +185,17 @@ const page = () => {
 
     return (
         <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+            {/* Back button - visible on all devices */}
+            <div className="mb-4">
+                <Link 
+                    href="/dashboard" 
+                    className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span>Back to Dashboard</span>
+                </Link>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Manage Games</h1>

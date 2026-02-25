@@ -2,6 +2,8 @@
 
 import { PlusCircle, Trash2 } from 'lucide-react'
 import React, { useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const page = () => {
     const [assistance, setAssistance] = useState([]);
@@ -47,6 +49,17 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+        {/* Desktop back button - only visible on desktop */}
+        <div className=" mb-6">
+            <Link 
+                href="/dashboard" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+            >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Dashboard</span>
+            </Link>
+        </div>
+
         <h1 className="text-2xl font-bold mb-6">Game Assistance (Head-to-Head)</h1>
 
         {/* Form */}

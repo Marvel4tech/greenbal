@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useMemo, useState } from "react"
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const labelPrediction = (p) => {
   if (p === "homeWin") return "Home Win"
@@ -156,6 +158,17 @@ const Page = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
+      {/* Back button - visible on all devices */}
+      <div className="mb-2">
+        <Link 
+          href="/dashboard/users" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to All Users</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>

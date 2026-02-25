@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BadgeCheck, Globe2, ShieldCheck, Trophy, Zap, MapPin, ArrowRight } from "lucide-react"
 import Navbar from "@/components/Navbar"
+import { ArrowLeft } from 'lucide-react'
 
 const values = [
   {
@@ -47,6 +48,17 @@ const Page = () => {
     <main className="min-h-[calc(100vh-5rem)] bg-gray-50 dark:bg-gray-900">
       <Navbar />
 
+      {/* Back button to home */}
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
         {/* Background image */}
@@ -74,8 +86,8 @@ const Page = () => {
 
           <p className="mt-4 max-w-2xl text-white/80 text-sm md:text-base leading-relaxed">
             greenball360 is a free sports prediction platform built for fans who love competition,
-            strategy, and the thrill of a live leaderboard. We’re based in{" "}
-            <span className="font-semibold text-white">South London</span> — and we’re building a
+            strategy, and the thrill of a live leaderboard. We're based in{" "}
+            <span className="font-semibold text-white">South London</span> — and we're building a
             community where accuracy gets rewarded.
           </p>
 
@@ -118,9 +130,9 @@ const Page = () => {
             </div>
           </div>
 
-          {/* What we’re building */}
+          {/* What we're building */}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black/50 p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">What we’re building</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">What we're building</h2>
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               A simple, modern prediction experience: daily match picks, real-time rankings,
               and weekly cycles that give every player a fair shot at winning — no matter when they join.

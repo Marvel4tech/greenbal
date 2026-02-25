@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { FaFutbol } from "react-icons/fa"
 import React, { useEffect, useRef, useState } from "react"
 import { ThemeToggle } from "./theme-toggle"
-import { Menu, X } from "lucide-react"
+import { LogIn, Menu, X } from "lucide-react"
 
 const Navbar = () => {
   const pathname = usePathname()
@@ -86,6 +86,15 @@ const Navbar = () => {
 
         {/* Right controls */}
         <div className="flex items-center gap-3">
+          {/* Login Button - Desktop */}
+          <Link
+            href="/login"
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-black font-semibold hover:opacity-90 transition"
+          >
+            <LogIn size={18} />
+            <span>Login</span>
+          </Link>
+
           <ThemeToggle />
 
           {/* Mobile Menu Button */}
@@ -108,6 +117,16 @@ const Navbar = () => {
       >
         <div ref={mobileMenuRef} className="px-4 pb-4 bg-black/90 backdrop-blur">
           <nav className="flex flex-col gap-2">
+            {/* Mobile Login Button - Shown at top of mobile menu */}
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition mb-2"
+              onClick={() => setOpen(false)}
+            >
+              <LogIn size={18} />
+              <span>Login</span>
+            </Link>
+
             {navlinks.map((link) => {
               const active = isActive(link.href)
               return (
@@ -120,6 +139,7 @@ const Navbar = () => {
                       ? "bg-primary text-black font-semibold"
                       : "text-white font-medium hover:bg-primary hover:text-black",
                   ].join(" ")}
+                  onClick={() => setOpen(false)}
                 >
                   {link.label}
                 </Link>

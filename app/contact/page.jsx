@@ -2,11 +2,23 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Mail, MapPin, Clock, Phone, ArrowRight, ShieldCheck } from "lucide-react"
 import Navbar from "@/components/Navbar"
+import { ArrowLeft } from 'lucide-react'
 
 const Page = () => {
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-gray-50 dark:bg-gray-900">
       <Navbar />
+
+      {/* Back button to home */}
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
 
       {/* Header */}
       <section className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black/40">
@@ -22,7 +34,7 @@ const Page = () => {
 
           <p className="mt-3 max-w-2xl text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
             Need help with your account, predictions, verification emails, or payouts?
-            Send us a message and we’ll get back to you.
+            Send us a message and we'll get back to you.
           </p>
         </div>
       </section>
@@ -36,7 +48,7 @@ const Page = () => {
               Reach greenball360
             </h2>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              We’re based in <span className="font-semibold">South London</span>. For the fastest help,
+              We're based in <span className="font-semibold">South London</span>. For the fastest help,
               email us with your username + a short description of the issue.
             </p>
 
@@ -78,7 +90,7 @@ const Page = () => {
                 </div>
               </div>
 
-              {/* Optional phone placeholder (remove if you don’t want it) */}
+              {/* Optional phone placeholder (remove if you don't want it) */}
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-gray-800 flex items-center justify-center">
                   <Phone className="w-5 h-5 text-primary" />
@@ -116,16 +128,16 @@ const Page = () => {
 
             <div className="mt-6 space-y-4">
               <FAQ
-                q="I didn’t receive a verification email."
-                a="Check Spam/Promotions. If it’s still missing, try signing in again to resend, or email support with your email address."
+                q="I didn't receive a verification email."
+                a="Check Spam/Promotions. If it's still missing, try signing in again to resend, or email support with your email address."
               />
               <FAQ
-                q="My prediction didn’t count."
-                a="Predictions lock at kickoff. If you submitted after kickoff, the game is closed and won’t accept changes."
+                q="My prediction didn't count."
+                a="Predictions lock at kickoff. If you submitted after kickoff, the game is closed and won't accept changes."
               />
               <FAQ
                 q="Leaderboard points look wrong."
-                a="Leaderboards update after admins publish final results. If it’s still wrong after a result update, contact support with the match + your prediction."
+                a="Leaderboards update after admins publish final results. If it's still wrong after a result update, contact support with the match + your prediction."
               />
               <FAQ
                 q="How do weekly resets work?"

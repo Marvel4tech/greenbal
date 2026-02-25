@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Trophy, Crown, Sparkles, ArrowRight, Info, ShieldCheck } from "lucide-react"
 import Navbar from "@/components/Navbar"
+import { ArrowLeft } from 'lucide-react'
 
 const Page = () => {
   const [players, setPlayers] = useState([])
@@ -171,6 +172,17 @@ const Page = () => {
       {/* Navbar - Full width */}
       <div className="w-full border-b border-gray-200 dark:border-gray-800">
         <Navbar />
+      </div>
+
+      {/* Back button to home */}
+      <div className="max-w-6xl mx-auto w-full px-4 pt-4">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Home</span>
+        </Link>
       </div>
 
       {/* Updating toast */}

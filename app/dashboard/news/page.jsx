@@ -3,6 +3,8 @@
 import { Newspaper, PlusCircle, Trash } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const page = () => {
     const [news, setNews] = useState({
@@ -52,8 +54,19 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
+        {/* Back button - visible on all devices */}
+        <div className="mb-4">
+            <Link 
+                href="/dashboard" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+            >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Back to Dashboard</span>
+            </Link>
+        </div>
+
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Newspaper  className="text-primary"/> Admin News Management
+            <Newspaper className="text-primary"/> Admin News Management
         </h1>
 
         {/* form */}

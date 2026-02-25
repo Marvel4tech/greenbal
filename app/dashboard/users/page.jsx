@@ -3,6 +3,7 @@
 import { Mail, Search, User } from "lucide-react"
 import Link from "next/link"
 import React, { useEffect, useMemo, useState } from "react"
+import { ArrowLeft } from 'lucide-react'
 
 const emptyToDash = (v) => (v ? v : "—")
 const PAGE_SIZE = 50
@@ -89,6 +90,17 @@ export default function Page() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Back button - visible on all devices */}
+      <div className="mb-4">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
+
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Users</h1>

@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/client'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 const Page = () => {
   const [players, setPlayers] = useState([])
@@ -153,6 +155,17 @@ const Page = () => {
           Updating leaderboard…
         </div>
       )}
+
+      {/* Back button - visible on all devices */}
+      <div className="mb-4">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div>

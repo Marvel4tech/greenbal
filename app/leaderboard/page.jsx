@@ -12,11 +12,12 @@ const Page = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [weekStart, setWeekStart] = useState(null)
 
   const debounceRef = useRef(null)
   const hideToastRef = useRef(null)
 
-  const fetchLeaderboard = useCallback(async () => {
+  /*const fetchLeaderboard = useCallback(async () => {
     try {
       setError("")
       const res = await fetch("/api/leaderboard/public", { cache: "no-store" })
@@ -33,6 +34,35 @@ const Page = () => {
       setPlayers(Array.isArray(data) ? data : [])
     } catch (e) {
       setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])*/
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      setError("")
+      setLoading(true)
+  
+      const res = await fetch("/api/leaderboard/public", { cache: "no-store" })
+      const text = await res.text()
+  
+      let json
+      try {
+        json = text ? JSON.parse(text) : null
+      } catch {
+        throw new Error("Server did not return JSON")
+      }
+  
+      if (!res.ok) throw new Error(json?.error || "Failed to fetch leaderboard")
+  
+      // ✅ your API returns { week_start, rows, me }
+      setWeekStart(json?.week_start ?? null)
+      setPlayers(Array.isArray(json?.rows) ? json.rows : [])
+    } catch (e) {
+      setError(e.message)
+      setPlayers([])
+      setWeekStart(null)
     } finally {
       setLoading(false)
     }
@@ -94,38 +124,26 @@ const Page = () => {
 
   // Always show current week window (Tue → Mon) even if players is empty
   const weekLabel = useMemo(() => {
-    // Preferred: read from DB response (if we have it)
-    const raw = players?.[0]?.week_start
-
-    // Fallback: compute current week_start in UTC (Tuesday-based)
-    const getWeekStartTuesdayUTC = (isoOrDate = new Date()) => {
-      const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : new Date(isoOrDate)
-      // force UTC midnight
-      const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-      const day = utc.getUTCDay() // Sun=0 ... Sat=6
-
-      // We want Tuesday = 2 as start
-      // Calculate how many days back to reach Tuesday
-      // Example: Tue(2)->0, Wed(3)->1, Mon(1)->6, Sun(0)->5
-      const diff = (day - 2 + 7) % 7
+    const raw = weekStart || players?.[0]?.week_start
+  
+    // Fallback: compute current week_start Tuesday (UTC)
+    const getWeekStartTuesdayUTC = (dt = new Date()) => {
+      const utc = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()))
+      const day = utc.getUTCDay() // Sun=0..Sat=6
+      const diff = (day - 2 + 7) % 7 // Tuesday=2
       utc.setUTCDate(utc.getUTCDate() - diff)
-
       return utc
     }
-
+  
     const start = raw ? new Date(`${raw}T00:00:00Z`) : getWeekStartTuesdayUTC(new Date())
     const end = new Date(start)
     end.setUTCDate(end.getUTCDate() + 6)
-
+  
     const fmt = (d) =>
-      new Intl.DateTimeFormat("en-GB", {
-        day: "numeric",
-        month: "short",
-        timeZone: "UTC",
-      }).format(d)
-
+      new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(d)
+  
     return `${fmt(start)} – ${fmt(end)}`
-  }, [players])
+  }, [weekStart, players])
   
 
   const podium = useMemo(() => {
@@ -377,7 +395,7 @@ const Page = () => {
                         })}
                       </AnimatePresence>
 
-                      {players.length === 0 && (
+                      {!loading && players.length === 0 && (
                         <tr>
                           <td colSpan={4} className="text-center py-16 text-gray-500 dark:text-gray-400">
                             No leaderboard data yet.

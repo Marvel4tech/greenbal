@@ -347,9 +347,6 @@ const Page = () => {
                         <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-200 text-xs uppercase tracking-wider">
                           Points
                         </th>
-                        <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-200 text-xs uppercase tracking-wider">
-                          Duration
-                        </th>
                       </tr>
                     </thead>
 
@@ -385,10 +382,6 @@ const Page = () => {
                                   {p.points ?? 0}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">pts</span>
-                              </td>
-
-                              <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
-                                {p.duration || "—"}
                               </td>
                             </motion.tr>
                           )

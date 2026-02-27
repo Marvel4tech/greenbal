@@ -156,13 +156,14 @@ useEffect(() => {
                 </div>
 
                 <h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                  Predict. Score Points.{" "}
-                  <span className="text-primary">Top 5 win cash weekly.</span>
+                  It’s free. It’s fair. It’s football.{" "}
+                  <span className="text-primary">Top 5 predictors win £10 every week.</span>
                 </h1>
 
                 <p className="mt-4 text-white/80 text-sm md:text-base leading-relaxed">
-                  greenball360 is a free prediction game. Pick match outcomes daily, climb the weekly leaderboard,
-                  and compete for rewards. Fast, fair, and built for serious predictors.
+                  greenball360 is a free-to-play football prediction platform where skill decides the winner. 
+                  Predict match outcomes daily, rise to the top of the weekly leaderboard through accuracy alone, 
+                  and compete for rewards — no betting, no wagering. Fast, fair, and built for serious competitors.
                 </p>
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">

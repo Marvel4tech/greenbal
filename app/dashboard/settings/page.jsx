@@ -29,7 +29,7 @@ const page = () => {
     
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-8 mb-10">
         {/* Back button - visible on all devices */}
         <div className="mb-2">
             <Link 

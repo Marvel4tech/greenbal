@@ -157,7 +157,7 @@ const Page = () => {
   const joined = useMemo(() => formatDate(user?.joined), [user?.joined])
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6 mb-10">
       {/* Back button - visible on all devices */}
       <div className="mb-2">
         <Link 

@@ -69,7 +69,7 @@ const Page = () => {
   }, [])
 
   return (
-    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-24 md:pb-0'>
+    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-24 md:pb-0 mb-10'>
       {/* Desktop Sidebar */}
       <aside className='hidden md:flex md:flex-col md:w-40 lg:w-56'>
         <div className='py-6 border-b border-primary'>

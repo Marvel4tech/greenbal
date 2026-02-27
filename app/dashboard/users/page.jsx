@@ -89,7 +89,7 @@ export default function Page() {
   }, [loading, error, debounced, count])
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto mb-10">
       {/* Back button - visible on all devices */}
       <div className="mb-4">
         <Link 

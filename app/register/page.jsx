@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
@@ -87,18 +87,29 @@ const Page = () => {
   }
   
   return (
-    <div className=' h-screen'>
-      <div className=' h-full flex items-center justify-center px-4'>
-        <div className=' flex flex-col bg-black/10 w-full md:w-1/2 border border-white/30 rounded-sm px-5 py-5 gap-10'>
-          <h1 className=' text-2xl font-semibold mt-10'>Create your Account</h1>
+    <div className='h-screen'>
+      <div className='h-full flex items-center justify-center px-4'>
+        <div className='flex flex-col bg-black/10 w-full md:w-1/2 border border-white/30 rounded-sm px-5 py-5 gap-10'>
+          {/* Back button - visible on all devices */}
+          <div className="self-start -mt-2">
+            <Link 
+              href="/" 
+              className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+
+          <h1 className='text-2xl font-semibold text-center'>Create your Account</h1>
 
           {error && (
-            <div className=' bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded'>
+            <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded'>
               {error}
             </div>
           )}
 
-          <form className=' w-full flex flex-col gap-5' onSubmit={handleSubmit} suppressHydrationWarning>
+          <form className='w-full flex flex-col gap-5' onSubmit={handleSubmit} suppressHydrationWarning>
             <div>
               <label htmlFor="username">Username</label>
               <input
@@ -107,7 +118,7 @@ const Page = () => {
                 type="text"
                 value={formData.username}
                 onChange={handleChange}
-                className=' border-white/50 px-4 py-2 w-full border rounded-sm'
+                className='border-white/50 px-4 py-2 w-full border rounded-sm'
                 required
                 suppressHydrationWarning
               />
@@ -120,36 +131,36 @@ const Page = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className=' border-white/50 px-4 py-2 w-full border rounded-sm'
+                className='border-white/50 px-4 py-2 w-full border rounded-sm'
                 required
                 suppressHydrationWarning
               />
             </div>
-            <div className=' relative'>
+            <div className='relative'>
               <label htmlFor="password">Password</label>
-              <div className=' relative flex items-center'>
+              <div className='relative flex items-center'>
                 <input 
                   name='password'
                   id='password'
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleChange}
-                  className=' border-white/50 px-4 py-2 w-full border rounded-sm'
+                  className='border-white/50 px-4 py-2 w-full border rounded-sm pr-10'
                   required
                   suppressHydrationWarning
                 />
                 <button type='button' onClick={passwordShowVisibility} aria-label={showPassword ? 'Hide password' : 'Show password'} 
-                className=' absolute right-3 text-gray-500 hover:text-gray-700'>
+                className='absolute right-3 text-gray-500 hover:text-gray-700'>
                   {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                 </button>
               </div>
             </div>
-            <Button type='submit' className=' w-full rounded-sm font-semibold'>
+            <Button type='submit' className='w-full rounded-sm font-semibold'>
               {loading ? "Creating Account..." : "Register"}
             </Button>
           </form>
-          <h1 className=' self-center'>
-            Have an Account? <span className=' text-primary font-medium'><Link href={"/login"}>Login</Link></span>
+          <h1 className='self-center'>
+            Have an Account? <span className='text-primary font-medium'><Link href={"/login"}>Login</Link></span>
           </h1>
         </div>
       </div>

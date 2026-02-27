@@ -1,6 +1,7 @@
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" })
@@ -57,7 +58,10 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${space.variable}`}>
       <body className={`${inter.variable} ${space.variable} font-sans`}>
         <ThemeProvider>
-          {children} 
+          <main>
+            {children}
+          </main>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

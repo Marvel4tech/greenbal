@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createServerClientWrapper } from "@/lib/supabase/server"
+import { ArrowLeft } from "lucide-react" // Make sure to install lucide-react or import from your icon library
 
 function StatusPill({ status }) {
   const s = (status || "").toLowerCase()
@@ -77,6 +78,17 @@ export default async function WalletPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10">
+      {/* Back button */}
+      <div className="mb-6">
+        <Link 
+          href="/profile" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Dashboard</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -95,7 +107,7 @@ export default async function WalletPage() {
             100% FREE TO PLAY
           </span>
           <Link
-            href="/rules"
+            href="/about"
             className="text-xs text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition underline underline-offset-4 decoration-primary/60"
           >
             See scoring & rules

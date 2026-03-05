@@ -48,7 +48,7 @@ const page = () => {
     }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto mb-10">
         {/* Desktop back button - only visible on desktop */}
         <div className=" mb-6">
             <Link 

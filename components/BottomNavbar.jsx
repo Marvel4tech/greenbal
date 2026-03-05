@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Trophy, Gamepad2, InfoIcon, Newspaper, Home, User } from "lucide-react"
+import { Trophy, Gamepad2, InfoIcon, Newspaper, Home, User, Wallet2 } from "lucide-react"
 
 const Page = () => {
   const pathname = usePathname()
@@ -14,6 +14,7 @@ const Page = () => {
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
     { label: 'News', href: '/profile/news', icon: Newspaper },
     { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
+    { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
   ]
 
   const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')

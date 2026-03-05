@@ -53,7 +53,7 @@ const page = () => {
     }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto mb-10">
         {/* Back button - visible on all devices */}
         <div className="mb-4">
             <Link 

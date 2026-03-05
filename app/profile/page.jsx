@@ -3,7 +3,7 @@
 import ProfileUserCard from '@/components/ProfileUserCard'
 import ProfileCompletionMeter from '@/components/ProfileCompletionMeter'
 import SignOutButton from '@/components/SignOutButton'
-import { Gamepad2, LogIn, Timer, Trophy, User2, Settings, Newspaper, Home, InfoIcon, } from 'lucide-react'
+import { Gamepad2, LogIn, Timer, Trophy, User2, Settings, Newspaper, Home, InfoIcon, Wallet2, } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
@@ -17,6 +17,7 @@ const Page = () => {
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
     { label: 'News', href: '/profile/news', icon: Newspaper },
     { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
+    { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
   ]
 
   const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')
@@ -69,7 +70,7 @@ const Page = () => {
   }, [])
 
   return (
-    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-24 md:pb-0'>
+    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-24 md:pb-0 mb-10'>
       {/* Desktop Sidebar */}
       <aside className='hidden md:flex md:flex-col md:w-40 lg:w-56'>
         <div className='py-6 border-b border-primary'>

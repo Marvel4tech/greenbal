@@ -3,7 +3,7 @@
 import SignOutButton from '@/components/SignOutButton'
 import Link from 'next/link'
 import React, { useEffect, useMemo, useState } from 'react'
-import { FaChartBar, FaCog, FaFutbol, FaInfoCircle, FaNewspaper, FaTools, FaTrophy, FaUsers } from 'react-icons/fa'
+import { FaChartBar, FaCog, FaFutbol, FaInfoCircle, FaMoneyBillWave, FaNewspaper, FaTools, FaTrophy, FaUsers } from 'react-icons/fa'
 
 const adminCards = [
   { title: 'Manage Games', href: '/dashboard/games', icon: <FaFutbol />, color: 'bg-green-100 dark:bg-green-900/30', desc: 'Create and update daily matches.' },
@@ -13,6 +13,7 @@ const adminCards = [
   { title: 'Users', href: '/dashboard/users', icon: <FaUsers />, color: 'bg-yellow-100 dark:bg-yellow-900/30', desc: 'View all user profiles.' },
   { title: 'Settings', href: '/dashboard/settings', icon: <FaCog />, color: 'bg-gray-100 dark:bg-gray-900/30', desc: 'Manage app configuration.' },
   { title: 'System Tools', href: '/dashboard/tools', icon: <FaTools />, color: 'bg-red-100 dark:bg-red-900/30', desc: 'Backup, logs, maintenance.' },
+  { title: 'Payouts', href: '/dashboard/payouts', icon: <FaMoneyBillWave />, color: 'bg-emerald-100 dark:bg-emerald-900/30', desc: 'Manage weekly winner payouts.' },
 ]
 
 const formatNum = (n) => new Intl.NumberFormat().format(Number(n ?? 0))

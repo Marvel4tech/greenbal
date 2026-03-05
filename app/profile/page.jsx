@@ -3,7 +3,7 @@
 import ProfileUserCard from '@/components/ProfileUserCard'
 import ProfileCompletionMeter from '@/components/ProfileCompletionMeter'
 import SignOutButton from '@/components/SignOutButton'
-import { Gamepad2, LogIn, Timer, Trophy, User2, Settings, Newspaper, Home, InfoIcon, } from 'lucide-react'
+import { Gamepad2, LogIn, Timer, Trophy, User2, Settings, Newspaper, Home, InfoIcon, Wallet2, } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
@@ -17,6 +17,7 @@ const Page = () => {
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
     { label: 'News', href: '/profile/news', icon: Newspaper },
     { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
+    { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
   ]
 
   const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')

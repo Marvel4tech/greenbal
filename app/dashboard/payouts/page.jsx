@@ -62,7 +62,7 @@ export default async function AdminPayoutsPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link 
-          href="/admin" 
+          href="/dashboard" 
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

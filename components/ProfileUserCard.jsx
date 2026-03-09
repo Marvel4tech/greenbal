@@ -32,9 +32,7 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
   const [error, setError] = useState("")
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [avatarLoaded, setAvatarLoaded] = useState(false)
 
   const avatarInputRef = useRef(null)
 
@@ -78,16 +76,7 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
     return name?.[0]?.toUpperCase?.() || "U"
   }, [profile])
 
-  // Prefer the local updated form value first
   const avatarSrc = (form.avatar_url || profile?.avatar_url || "").trim()
-
-  useEffect(() => {
-    if (avatarSrc) {
-      setAvatarLoaded(false)
-    } else {
-      setAvatarLoaded(true)
-    }
-  }, [avatarSrc])
 
   const saveProfile = async () => {
     try {
@@ -143,19 +132,12 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
 
       if (!res.ok) throw new Error(data?.error || "Failed to upload profile picture")
 
-      const freshAvatarUrl = data.avatar_url
-        ? `${data.avatar_url}?t=${Date.now()}`
-        : ""
-
       setForm((prev) => ({
         ...prev,
-        avatar_url: freshAvatarUrl,
+        avatar_url: data.avatar_url || "",
       }))
 
-      onProfileUpdated?.({
-        ...data,
-        avatar_url: freshAvatarUrl,
-      })
+      onProfileUpdated?.(data)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -218,20 +200,13 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
                 "
               >
                 {avatarSrc ? (
-                  <>
-                    {!avatarLoaded && (
-                      <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-full" />
-                    )}
-
-                    <img
-                      src={avatarSrc}
-                      alt="Profile picture"
-                      className={`w-full h-full object-cover rounded-full transition-opacity duration-300 ${
-                        avatarLoaded ? "opacity-100" : "opacity-0"
-                      }`}
-                      onLoad={() => setAvatarLoaded(true)}
-                    />
-                  </>
+                  <img
+                    src={avatarSrc}
+                    alt="Profile picture"
+                    className="w-full h-full object-cover rounded-full"
+                    loading="eager"
+                    decoding="async"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
                     <span className="text-4xl md:text-5xl font-bold text-primary">

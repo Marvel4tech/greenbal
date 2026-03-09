@@ -1,4 +1,6 @@
-'use client'
+// PAGE IS NOT ACTIVE FOR NOW
+
+/* 'use client'
 
 import { PlusCircle, Trash2 } from 'lucide-react'
 import React, { useState } from 'react'
@@ -49,7 +51,7 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto mb-10">
-        {/* Desktop back button - only visible on desktop */}
+        {/* Desktop back button - only visible on desktop }
         <div className=" mb-6">
             <Link 
                 href="/dashboard" 
@@ -62,7 +64,7 @@ const page = () => {
 
         <h1 className="text-2xl font-bold mb-6">Game Assistance (Head-to-Head)</h1>
 
-        {/* Form */}
+        {/* Form *}
         <form onSubmit={handleAdd} className="bg-white dark:bg-black/50 p-6 rounded-xl shadow-md flex flex-col gap-4 mb-8">
             <div className="flex flex-col md:flex-row gap-4">
                 <input 
@@ -126,7 +128,7 @@ const page = () => {
             </button>
         </form>
 
-        {/* Assistance List */}
+        {/* Assistance List *}
         {assistance.length > 0 ? (
             <div className="space-y-6">
                 {assistance.map((assist) => (
@@ -159,4 +161,4 @@ const page = () => {
   );
 };
 
-export default page
+export default page */

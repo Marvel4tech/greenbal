@@ -1,4 +1,6 @@
-import React from 'react'
+// PAGE COMING SOON. DEACTIVATED FOR A WHILE
+
+/*import React from 'react'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -49,7 +51,7 @@ const page = () => {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 py-6 md:px-10 md:py-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Back button - only visible on desktop */}
+        {/* Back button - only visible on desktop }
         <div className="hidden md:flex items-center justify-between">
           <Link 
             href="/profile" 
@@ -61,11 +63,11 @@ const page = () => {
           
           <h1 className="text-2xl font-bold text-center flex-1">Game Assistance</h1>
           
-          {/* Empty div for flex spacing */}
+          {/* Empty div for flex spacing }
           <div className="w-20"></div>
         </div>
 
-        {/* Mobile title - only visible on mobile */}
+        {/* Mobile title - only visible on mobile }
         <h1 className="text-2xl font-bold text-center md:hidden">Game Assistance</h1>
 
         {matches.map((match) => (
@@ -115,4 +117,4 @@ const page = () => {
   )
 }
 
-export default page
+export default page */

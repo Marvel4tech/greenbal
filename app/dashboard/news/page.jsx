@@ -1,4 +1,6 @@
-'use client'
+// PAGE IS NOT ACTIVE FOR NOW
+
+/* 'use client'
 
 import { Newspaper, PlusCircle, Trash } from 'lucide-react'
 import Image from 'next/image'
@@ -54,7 +56,7 @@ const page = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto mb-10">
-        {/* Back button - visible on all devices */}
+        {/* Back button - visible on all devices }
         <div className="mb-4">
             <Link 
                 href="/dashboard" 
@@ -69,9 +71,9 @@ const page = () => {
             <Newspaper className="text-primary"/> Admin News Management
         </h1>
 
-        {/* form */}
+        {/* form }
         <form onSubmit={handleSubmit} className="bg-white dark:bg-black/60 p-6 rounded-xl shadow-lg flex flex-col gap-6 mb-10">
-            {/* title */}
+            {/* title }
             <div>
                 <label className="block text-sm font-medium mb-2">Title</label>
                 <input 
@@ -85,7 +87,7 @@ const page = () => {
                 />
             </div>
 
-            {/* Category */}
+            {/* Category }
             <div>
                 <label className="block text-sm font-medium mb-2">Category</label>
                 <select value={news.category} onChange={handleChange} name='category' className="w-full border 
@@ -103,7 +105,7 @@ const page = () => {
                 </select>
             </div>
 
-            {/* Cover Image */}
+            {/* Cover Image }
             <div>
                 <label className="block text-sm font-medium mb-2">Cover Image</label>
                 <input 
@@ -118,10 +120,10 @@ const page = () => {
                         alt='preview'
                         className="mt-3 w-full h-56 object-cover rounded-lg shadow-md"
                     />
-                )} */}
+                )} }
             </div>
 
-            {/* Content */}
+            {/* Content }
             <label className="block text-sm font-medium mb-2">Content</label>
             <textarea 
                 name="content" 
@@ -133,14 +135,14 @@ const page = () => {
                 required
             />
 
-            {/* Submit */}
+            {/* Submit }
             <button type='submit' className="bg-primary text-white px-6 py-3 rounded-md font-semibold flex items-center 
             justify-center gap-2 hover:opacity-90">
                 <PlusCircle size={18} /> Publish Post
             </button>
         </form>
 
-        {/* Recent Posts Section */}
+        {/* Recent Posts Section }
         <div className="bg-white dark:bg-black/60 p-6 rounded-xl shadow-md">
             <h2 className="text-xl font-semibold mb-4">🕒 Recent News Posts</h2>
 
@@ -188,4 +190,4 @@ const page = () => {
   )
 }
 
-export default page
+export default page */

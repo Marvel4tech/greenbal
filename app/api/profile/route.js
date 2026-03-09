@@ -43,7 +43,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, full_name, username, country, phone, gender, bank_name, bank_account, cover_url, avatar_url"
+      "id, email, full_name, username, country, phone, gender, bank_name, bank_account, avatar_url"
     )
     .eq("id", user.id)
     .single()
@@ -86,7 +86,6 @@ export async function PATCH(request) {
     gender,
     bank_name,
     bank_account,
-    cover_url,
     avatar_url,
   }) => ({
     full_name,
@@ -96,7 +95,6 @@ export async function PATCH(request) {
     gender,
     bank_name,
     bank_account,
-    cover_url,
     avatar_url,
   }))(body)
 

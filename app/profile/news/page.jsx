@@ -1,4 +1,6 @@
-import Image from 'next/image'
+// PAGE COMING SOON. DEACTIVATED FOR A WHILE
+
+/* import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { ArrowLeft } from 'lucide-react'
@@ -43,7 +45,7 @@ const page = () => {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 py-6 md:px-10 md:py-8">
       <div className="max-w-6xl mx-auto">
-        {/* Desktop back button - only visible on desktop */}
+        {/* Desktop back button - only visible on desktop }
         <div className="hidden md:block mb-6">
           <Link 
             href="/profile" 
@@ -58,7 +60,7 @@ const page = () => {
           Football News & Updates
         </h1>
 
-        {/* News Grid */}
+        {/* News Grid }
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {dummyNews.map((news) => (
               <div key={news.id} className="bg-white dark:bg-black/70 rounded-lg shadow-lg overflow-hidden border 
@@ -96,4 +98,4 @@ const page = () => {
   )
 }
 
-export default page
+export default page */

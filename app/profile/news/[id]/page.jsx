@@ -1,4 +1,6 @@
-import { ArrowLeft } from 'lucide-react';
+// PAGE COMING SOON. DEACTIVATED FOR A WHILE
+
+/* import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react'
@@ -50,7 +52,7 @@ const page = async ({ params }) => {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-100 dark:bg-gray-900 px-4 md:px-10 py-6 md:py-10">
         <div className="max-w-3xl mx-auto">
-            {/* Desktop back button - only visible on desktop */}
+            {/* Desktop back button - only visible on desktop }
             <div className="hidden md:block mb-4">
                 <Link 
                     href="/profile/news" 
@@ -62,7 +64,7 @@ const page = async ({ params }) => {
             </div>
 
             <div className="bg-white dark:bg-black/70 border rounded-lg shadow-lg overflow-hidden">
-                {/* Image */}
+                {/* Image }
                 <div className="relative w-full h-64 md:h-96">
                     <Image 
                         src={article.image}
@@ -72,7 +74,7 @@ const page = async ({ params }) => {
                     />
                 </div>
 
-                {/* Article Content */}
+                {/* Article Content }
                 <div className="p-6 md:p-8">
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">
                         {article.title}
@@ -90,4 +92,4 @@ const page = async ({ params }) => {
   )
 }
 
-export default page
+export default page */

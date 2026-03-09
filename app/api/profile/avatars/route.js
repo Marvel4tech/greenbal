@@ -3,8 +3,16 @@ import { createServerClientWrapper } from "@/lib/supabase/server"
 
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp"]
 
-export async function GET() {
-  return NextResponse.json({ ok: true, route: "avatar api live" })
+function extractStoragePathFromPublicUrl(url) {
+  if (!url) return null
+
+  const cleanUrl = url.split("?")[0]
+  const marker = "/storage/v1/object/public/avatars/"
+  const idx = cleanUrl.indexOf(marker)
+
+  if (idx === -1) return null
+
+  return cleanUrl.slice(idx + marker.length)
 }
 
 export async function POST(req) {
@@ -48,21 +56,24 @@ export async function POST(req) {
       )
     }
 
-    await supabase.storage.from("avatars").remove([
-      `${user.id}/avatar.jpg`,
-      `${user.id}/avatar.jpeg`,
-      `${user.id}/avatar.png`,
-      `${user.id}/avatar.webp`,
-    ])
+    // Get existing avatar URL so we can delete old file
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single()
 
-    const filePath = `${user.id}/avatar.${ext}`
+    const oldPath = extractStoragePathFromPublicUrl(existingProfile?.avatar_url)
+
+    // Use a unique file name every upload
+    const filePath = `${user.id}/avatar-${Date.now()}.${ext}`
     const bytes = await file.arrayBuffer()
 
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, bytes, {
         contentType: file.type,
-        upsert: true,
+        upsert: false,
       })
 
     if (uploadError) {
@@ -73,7 +84,7 @@ export async function POST(req) {
       .from("avatars")
       .getPublicUrl(filePath)
 
-    const avatarUrl = publicUrlData?.publicUrl
+    const avatarUrl = publicUrlData.publicUrl
 
     const { data: updatedProfile, error: profileError } = await supabase
       .from("profiles")
@@ -84,6 +95,11 @@ export async function POST(req) {
 
     if (profileError) {
       return NextResponse.json({ error: profileError.message }, { status: 500 })
+    }
+
+    // Delete old file after successful update
+    if (oldPath) {
+      await supabase.storage.from("avatars").remove([oldPath])
     }
 
     return NextResponse.json(updatedProfile)
@@ -112,12 +128,17 @@ export async function DELETE() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    await supabase.storage.from("avatars").remove([
-      `${user.id}/avatar.jpg`,
-      `${user.id}/avatar.jpeg`,
-      `${user.id}/avatar.png`,
-      `${user.id}/avatar.webp`,
-    ])
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single()
+
+    const oldPath = extractStoragePathFromPublicUrl(existingProfile?.avatar_url)
+
+    if (oldPath) {
+      await supabase.storage.from("avatars").remove([oldPath])
+    }
 
     const { data: updatedProfile, error } = await supabase
       .from("profiles")

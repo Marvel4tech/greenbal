@@ -12,8 +12,8 @@ const Page = () => {
     { label: 'Home', href: '/', icon: Home },
     { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
-    { label: 'News', href: '/profile/news', icon: Newspaper },
-    { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
+    //{ label: 'News', href: '/profile/news', icon: Newspaper }, DE-ACTIVATED FOR NOW
+    // { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon }, DE-ACTIVATED FOR NOW
     { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
   ]
 

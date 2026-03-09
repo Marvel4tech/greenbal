@@ -61,8 +61,8 @@ const Page = () => {
     { label: 'Home', href: '/', icon: Home },
     { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
-    { label: 'News', href: '/profile/news', icon: Newspaper },
-    { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon },
+    // { label: 'News', href: '/profile/news', icon: Newspaper }, DE-ACTIVATED FOR NOW
+    // { label: 'Assistance', href: '/profile/assistance', icon: InfoIcon }, DE-ACTIVATED FOR NOW
     { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
   ]
 
@@ -229,7 +229,7 @@ const Page = () => {
         {/* Main grid */}
         <div className='flex flex-col md:flex-row h-full py-6 px-4 md:px-8 gap-4'>
           {/* Left */}
-          <div className='flex-1 bg-white dark:bg-black/70 border shadow-2xl rounded-sm'>
+          <div className='flex-1 bg-white dark:bg-black/70 border shadow-2xl'>
             <ProfileUserCard
               profile={profile}
               onProfileUpdated={(updated) => setProfile(updated)}

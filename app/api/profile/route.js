@@ -33,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // ✅ Ban enforcement
+  // Ban enforcement
   try {
     await ensureNotBanned(supabase, user.id)
   } catch (e) {
@@ -63,7 +63,7 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // ✅ Ban enforcement
+  // Ban enforcement
   try {
     await ensureNotBanned(supabase, user.id)
   } catch (e) {
@@ -109,7 +109,7 @@ export async function PATCH(request) {
     .update({ ...allowed, updated_at: new Date().toISOString() })
     .eq("id", user.id)
     .select(
-      "id, email, full_name, username, country, phone, gender, bank_name, bank_account, cover_url, avatar_url"
+      "id, email, full_name, username, country, phone, gender, bank_name, bank_account, avatar_url"
     )
     .single()
 

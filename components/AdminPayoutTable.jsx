@@ -27,10 +27,21 @@ function StatusPill({ status }) {
     default: "bg-gray-400 dark:bg-white/40",
   }
 
+  const label =
+    s === "paid"
+      ? "PAID"
+      : s === "available"
+      ? "AVAILABLE"
+      : s === "pending"
+      ? "PENDING"
+      : s === "voided"
+      ? "VOIDED"
+      : (status || "UNKNOWN").toUpperCase()
+
   return (
     <span className={`${base} ${styles[s] || styles.default}`}>
       <span className={`h-2 w-2 rounded-full ${dotStyles[s] || dotStyles.default}`} />
-      {(status || "UNKNOWN").toUpperCase()}
+      {label}
     </span>
   )
 }
@@ -40,11 +51,10 @@ function weekKey(tx) {
 }
 
 export default function AdminPayoutTable({ initialTxs }) {
-  const [txs, setTxs] = useState(initialTxs)
+  const [txs, setTxs] = useState(initialTxs || [])
   const [busyId, setBusyId] = useState(null)
   const [showPaid, setShowPaid] = useState(false)
 
-  // Build unique week list (already sorted newest first by server query)
   const weekOptions = useMemo(() => {
     const map = new Map()
     for (const t of txs) {
@@ -54,50 +64,128 @@ export default function AdminPayoutTable({ initialTxs }) {
     return Array.from(map.values())
   }, [txs])
 
-  // Default to latest week automatically
   const [selectedWeek, setSelectedWeek] = useState(() => weekOptions[0] || "all")
 
   const filteredTxs = useMemo(() => {
     let rows = txs
 
-    // Default behavior: latest week only (unless "all")
     if (selectedWeek !== "all") {
       const [ws, we] = selectedWeek.split("→")
       rows = rows.filter((t) => t.week_start === ws && t.week_end === we)
     }
 
-    // Hide paid by default (optional toggle)
-    if (!showPaid) rows = rows.filter((t) => t.status !== "paid")
+    if (!showPaid) {
+      rows = rows.filter((t) => t.status !== "paid")
+    }
 
     return rows
   }, [txs, selectedWeek, showPaid])
 
+  const replaceTx = (updatedTx) => {
+    setTxs((prev) =>
+      prev.map((t) =>
+        t.id === updatedTx.id
+          ? {
+              ...t,
+              ...updatedTx,
+              profiles: t.profiles,
+            }
+          : t
+      )
+    )
+  }
+
+  const onApprove = async (txId) => {
+    try {
+      setBusyId(txId)
+
+      const res = await fetch(`/api/admin/payouts/${txId}/approve`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        alert(json?.error || "Failed to approve reward")
+        return
+      }
+
+      replaceTx(json.tx)
+    } catch (err) {
+      alert("Something went wrong while approving reward")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const onVoid = async (txId) => {
+    const note = window.prompt("Enter reason for voiding this reward:")
+    if (!note?.trim()) return
+
+    try {
+      setBusyId(txId)
+
+      const res = await fetch(`/api/admin/payouts/${txId}/void`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ note: note.trim() }),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        alert(json?.error || "Failed to void reward")
+        return
+      }
+
+      replaceTx(json.tx)
+    } catch (err) {
+      alert("Something went wrong while voiding reward")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const onMarkPaid = async (txId, file) => {
-    if (!file) return alert("Upload receipt first.")
+    if (!file) {
+      alert("Upload receipt first.")
+      return
+    }
 
-    setBusyId(txId)
+    try {
+      setBusyId(txId)
 
-    const form = new FormData()
-    form.append("txId", txId)
-    form.append("receipt", file)
+      const form = new FormData()
+      form.append("receipt", file)
 
-    const res = await fetch("/api/admin/mark-paid", {
-      method: "POST",
-      body: form,
-    })
+      const res = await fetch(`/api/admin/payouts/${txId}/pay`, {
+        method: "PATCH",
+        body: form,
+      })
 
-    const json = await res.json()
-    setBusyId(null)
+      const json = await res.json()
 
-    if (!res.ok) return alert(json?.error || "Error marking paid")
+      if (!res.ok) {
+        alert(json?.error || "Failed to mark reward as paid")
+        return
+      }
 
-    // Update the row instantly
-    setTxs((prev) => prev.map((t) => (t.id === txId ? json.tx : t)))
+      replaceTx(json.tx)
+    } catch (err) {
+      alert("Something went wrong while marking reward paid")
+    } finally {
+      setBusyId(null)
+    }
   }
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 overflow-hidden shadow-sm dark:shadow-none">
-      {/* Header */}
       <div className="flex flex-col gap-3 px-5 py-4 border-b border-gray-200 dark:border-white/10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -105,7 +193,7 @@ export default function AdminPayoutTable({ initialTxs }) {
               Weekly Top 5 Payouts
             </h2>
             <p className="text-sm text-gray-600 dark:text-white/60">
-              Latest week selected by default. Upload receipt, then mark paid.
+              Approve rewards first, then upload receipt and mark them paid.
             </p>
           </div>
 
@@ -120,7 +208,6 @@ export default function AdminPayoutTable({ initialTxs }) {
                 onChange={(e) => setSelectedWeek(e.target.value)}
                 className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-primary/60"
               >
-                {/* Keep "All" as an option */}
                 <option value="all">All weeks</option>
                 {weekOptions.map((w) => (
                   <option key={w} value={w}>
@@ -142,28 +229,28 @@ export default function AdminPayoutTable({ initialTxs }) {
           </div>
         </div>
 
-        {/* Hint bar */}
         <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-3 text-sm text-gray-700 dark:text-white/80">
-          Tip: Leave “Show paid” off to focus only on winners that still need payout.
+          Pending rewards need approval. Available rewards can be paid after receipt upload.
         </div>
       </div>
 
-      {/* Table header */}
       <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 text-xs text-gray-500 dark:text-white/50 border-b border-gray-200 dark:border-white/10">
-        <div className="col-span-4">Winner</div>
-        <div className="col-span-3">Week</div>
-        <div className="col-span-2">Amount</div>
+        <div className="col-span-3">Winner</div>
+        <div className="col-span-2">Week</div>
+        <div className="col-span-1">Amount</div>
+        <div className="col-span-2">Status</div>
         <div className="col-span-2">Receipt</div>
-        <div className="col-span-1 text-right">Action</div>
+        <div className="col-span-2 text-right">Actions</div>
       </div>
 
-      {/* Rows */}
       <div className="divide-y divide-gray-200 dark:divide-white/10">
         {filteredTxs.map((tx) => (
           <AdminRow
             key={tx.id}
             tx={tx}
             busy={busyId === tx.id}
+            onApprove={onApprove}
+            onVoid={onVoid}
             onMarkPaid={onMarkPaid}
           />
         ))}
@@ -178,68 +265,113 @@ export default function AdminPayoutTable({ initialTxs }) {
   )
 }
 
-function AdminRow({ tx, busy, onMarkPaid }) {
+function AdminRow({ tx, busy, onApprove, onVoid, onMarkPaid }) {
   const [file, setFile] = useState(null)
   const username = tx?.profiles?.username
 
   return (
     <div className="px-5 py-4">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:items-center">
-        {/* Winner */}
-        <div className="md:col-span-4">
+        <div className="md:col-span-3">
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
             {username ? `@${username}` : tx.user_id}
           </p>
 
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <StatusPill status={tx.status} />
-            <span className="text-xs text-gray-500 dark:text-white/50">
-              {tx.paid_at
-                ? `Paid: ${new Date(tx.paid_at).toLocaleString()}`
-                : `Created: ${new Date(tx.created_at).toLocaleString()}`}
-            </span>
-          </div>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
+            {tx.paid_at
+              ? `Paid: ${new Date(tx.paid_at).toLocaleString('en-GB')}`
+              : `Created: ${new Date(tx.created_at).toLocaleString('en-GB')}`}
+          </p>
         </div>
 
-        {/* Week */}
-        <div className="md:col-span-3 text-sm text-gray-700 dark:text-white/80">
+        <div className="md:col-span-2 text-sm text-gray-700 dark:text-white/80">
           {tx.week_start} → {tx.week_end}
         </div>
 
-        {/* Amount */}
-        <div className="md:col-span-2 text-sm font-semibold text-gray-900 dark:text-white">
+        <div className="md:col-span-1 text-sm font-semibold text-gray-900 dark:text-white">
           £{Number(tx.amount_gbp).toFixed(2)}
         </div>
 
-        {/* Receipt Upload */}
         <div className="md:col-span-2">
-          <input
-            type="file"
-            accept="application/pdf,image/*"
-            className="block w-full text-xs text-gray-600 dark:text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-gray-800 dark:file:bg-white/10 dark:file:text-white"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            disabled={tx.status === "paid"}
-          />
-          {tx.status === "paid" ? (
-            <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
-              Receipt saved.
+          <StatusPill status={tx.status} />
+        </div>
+
+        <div className="md:col-span-2">
+          {tx.status === "available" ? (
+            <>
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                className="block w-full text-xs text-gray-600 dark:text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-gray-800 dark:file:bg-white/10 dark:file:text-white"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
+                Upload proof before marking paid
+              </p>
+            </>
+          ) : tx.status === "paid" ? (
+            <p className="text-xs text-gray-500 dark:text-white/50">
+              Receipt saved
             </p>
           ) : (
-            <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
-              Upload proof (PDF/image)
+            <p className="text-xs text-gray-500 dark:text-white/50">
+              Not needed yet
             </p>
           )}
         </div>
 
-        {/* Action */}
-        <div className="md:col-span-1 flex md:justify-end">
-          <button
-            onClick={() => onMarkPaid(tx.id, file)}
-            disabled={busy || tx.status === "paid"}
-            className="w-full md:w-auto rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
-          >
-            {tx.status === "paid" ? "Paid" : busy ? "Saving..." : "Mark Paid"}
-          </button>
+        <div className="md:col-span-2 flex flex-wrap gap-2 md:justify-end">
+          {tx.status === "pending" && (
+            <>
+              <button
+                onClick={() => onApprove(tx.id)}
+                disabled={busy}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition"
+              >
+                {busy ? "Saving..." : "Approve"}
+              </button>
+
+              <button
+                onClick={() => onVoid(tx.id)}
+                disabled={busy}
+                className="rounded-xl border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 transition dark:border-rose-400/20 dark:text-rose-300 dark:hover:bg-rose-500/10"
+              >
+                Void
+              </button>
+            </>
+          )}
+
+          {tx.status === "available" && (
+            <>
+              <button
+                onClick={() => onMarkPaid(tx.id, file)}
+                disabled={busy}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
+              >
+                {busy ? "Saving..." : "Mark Paid"}
+              </button>
+
+              <button
+                onClick={() => onVoid(tx.id)}
+                disabled={busy}
+                className="rounded-xl border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 transition dark:border-rose-400/20 dark:text-rose-300 dark:hover:bg-rose-500/10"
+              >
+                Void
+              </button>
+            </>
+          )}
+
+          {tx.status === "paid" && (
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-300">
+              Payout completed
+            </span>
+          )}
+
+          {tx.status === "voided" && (
+            <span className="text-xs font-medium text-rose-600 dark:text-rose-300">
+              Reward voided
+            </span>
+          )}
         </div>
       </div>
     </div>

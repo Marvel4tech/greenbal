@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 
-export async function GET(req, { params }) {
+export async function GET(req, context) {
+  const { id } = await context.params
+
   const supabase = await createServerClientWrapper()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
@@ -13,7 +17,7 @@ export async function GET(req, { params }) {
   const { data: tx, error } = await supabase
     .from("wallet_transactions")
     .select("id, user_id, receipt_path, status")
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (error || !tx) {

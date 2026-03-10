@@ -211,7 +211,7 @@ export default async function WalletPage() {
 
                 {tx.status === "paid" && tx.receipt_path ? (
                   <Link
-                    href={`/wallet/receipt/${tx.id}`}
+                    href={`/profile/wallet/receipt/${tx.id}`}
                     className="text-sm rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20 transition"
                   >
                     View receipt

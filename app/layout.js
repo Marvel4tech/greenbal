@@ -26,16 +26,33 @@ export const metadata = {
   ],
 
   applicationName: "greenball360",
+  manifest: "/manifest.json",
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "greenball360",
+  },
+
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 
   openGraph: {
     title: "greenball360 — Predict. Compete. Win Weekly.",
     description:
-      "Join Greenball360, a South London sports prediction platform. Make your picks, climb the leaderboard, and win weekly rewards.",
+      "Join Greenball360, a London free sports prediction platform. Make your picks, climb the leaderboard, and win weekly rewards.",
     url: "https://www.greenball360.com",
     siteName: "greenball360",
     images: [
       {
-        url: "/images/og-cover.jpg", // 👉 add later
+        url: "/images/og-cover.jpg",
         width: 1200,
         height: 630,
       },

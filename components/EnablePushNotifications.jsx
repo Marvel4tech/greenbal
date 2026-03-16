@@ -18,7 +18,11 @@ export default function EnablePushNotifications() {
         return
       }
 
+      console.log("VAPID key exists:", !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY)
+      console.log("Current notification permission:", Notification.permission)
+
       const permission = await Notification.requestPermission()
+      console.log("Permission result:", permission)
 
       if (permission !== "granted") {
         setMessage("Notification permission was not granted.")
@@ -28,8 +32,10 @@ export default function EnablePushNotifications() {
       const registration = await navigator.serviceWorker.register(
         "/firebase-messaging-sw.js"
       )
+      console.log("Service worker registered:", registration)
 
       const messaging = await getFirebaseMessagingSafe()
+      console.log("Messaging instance:", messaging)
 
       if (!messaging) {
         setMessage("Push notifications are not supported in this browser.")
@@ -40,6 +46,8 @@ export default function EnablePushNotifications() {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         serviceWorkerRegistration: registration,
       })
+
+      console.log("FCM token:", token)
 
       if (!token) {
         setMessage("Could not get a push token.")
@@ -55,6 +63,7 @@ export default function EnablePushNotifications() {
       })
 
       const json = await res.json()
+      console.log("Register token response:", { status: res.status, json })
 
       if (!res.ok) {
         setMessage(json?.error || "Failed to save push token.")
@@ -67,8 +76,8 @@ export default function EnablePushNotifications() {
 
       setMessage("Push notifications enabled.")
     } catch (error) {
-      console.error(error)
-      setMessage("Something went wrong enabling notifications.")
+      console.error("Enable push error:", error)
+      setMessage(error?.message || "Something went wrong enabling notifications.")
     } finally {
       setLoading(false)
     }

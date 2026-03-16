@@ -1,12 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { getToken, onMessage } from "firebase/messaging"
 import { getFirebaseMessagingSafe } from "@/lib/firebaseClient"
+
+function isIOS() {
+  if (typeof navigator === "undefined") return false
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
 
 export default function EnablePushNotifications() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  const [enabled, setEnabled] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const browserGranted =
+          typeof Notification !== "undefined" &&
+          Notification.permission === "granted"
+
+        const res = await fetch("/api/push/status", { cache: "no-store" })
+        const json = await res.json()
+
+        if (browserGranted && json?.enabled) {
+          setEnabled(true)
+          setMessage("Push notifications enabled.")
+        }
+      } catch (error) {
+        console.error("Push status check failed:", error)
+      } finally {
+        setChecking(false)
+      }
+    }
+
+    checkStatus()
+  }, [])
 
   const enablePush = async () => {
     try {
@@ -18,27 +49,27 @@ export default function EnablePushNotifications() {
         return
       }
 
-      console.log("VAPID key exists:", !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY)
-      console.log("Current notification permission:", Notification.permission)
-
-      const permission = await Notification.requestPermission()
-      console.log("Permission result:", permission)
-
-      if (permission !== "granted") {
-        setMessage("Notification permission was not granted.")
-        return
-      }
-
       const registration = await navigator.serviceWorker.register(
         "/firebase-messaging-sw.js"
       )
-      console.log("Service worker registered:", registration)
 
       const messaging = await getFirebaseMessagingSafe()
-      console.log("Messaging instance:", messaging)
 
       if (!messaging) {
-        setMessage("Push notifications are not supported in this browser.")
+        if (isIOS()) {
+          setMessage(
+            "On iPhone/iPad, add Greenball360 to your Home Screen from Safari, open it from the Home Screen, then enable notifications there."
+          )
+        } else {
+          setMessage("This browser does not support push notifications.")
+        }
+        return
+      }
+
+      const permission = await Notification.requestPermission()
+
+      if (permission !== "granted") {
+        setMessage("Notification permission was not granted.")
         return
       }
 
@@ -46,8 +77,6 @@ export default function EnablePushNotifications() {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         serviceWorkerRegistration: registration,
       })
-
-      console.log("FCM token:", token)
 
       if (!token) {
         setMessage("Could not get a push token.")
@@ -63,7 +92,6 @@ export default function EnablePushNotifications() {
       })
 
       const json = await res.json()
-      console.log("Register token response:", { status: res.status, json })
 
       if (!res.ok) {
         setMessage(json?.error || "Failed to save push token.")
@@ -74,6 +102,7 @@ export default function EnablePushNotifications() {
         console.log("Foreground message received:", payload)
       })
 
+      setEnabled(true)
       setMessage("Push notifications enabled.")
     } catch (error) {
       console.error("Enable push error:", error)
@@ -97,10 +126,16 @@ export default function EnablePushNotifications() {
 
         <button
           onClick={enablePush}
-          disabled={loading}
+          disabled={loading || checking || enabled}
           className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
         >
-          {loading ? "Enabling..." : "Enable notifications"}
+          {checking
+            ? "Checking..."
+            : loading
+            ? "Enabling..."
+            : enabled
+            ? "Notifications Enabled"
+            : "Enable notifications"}
         </button>
       </div>
 

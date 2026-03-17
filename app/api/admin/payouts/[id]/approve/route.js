@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/requireAdmin"
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 
 export async function PATCH(req, context) {
   const { id } = await context.params
@@ -13,11 +14,11 @@ export async function PATCH(req, context) {
     )
   }
 
-  const { supabase, user } = admin
+  const { user } = admin
   const body = await req.json().catch(() => ({}))
   const note = body?.note?.trim() || null
 
-  const { data: tx, error } = await supabase
+  const { data: tx, error } = await supabaseAdmin
     .from("wallet_transactions")
     .update({
       status: "available",
@@ -31,7 +32,10 @@ export async function PATCH(req, context) {
 
   if (error || !tx) {
     return NextResponse.json(
-      { error: "Transaction not found or not pending" },
+      {
+        error: "Transaction not found or not pending",
+        details: error?.message || null,
+      },
       { status: 400 }
     )
   }

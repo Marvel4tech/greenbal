@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/requireAdmin"
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 
 export async function PATCH(req, context) {
   const { id } = await context.params
@@ -13,7 +14,7 @@ export async function PATCH(req, context) {
     )
   }
 
-  const { supabase, user } = admin
+  const { user } = admin
 
   const formData = await req.formData()
   const receipt = formData.get("receipt")
@@ -26,7 +27,7 @@ export async function PATCH(req, context) {
     )
   }
 
-  const { data: existingTx, error: findError } = await supabase
+  const { data: existingTx, error: findError } = await supabaseAdmin
     .from("wallet_transactions")
     .select("id, user_id, status, week_start, week_end, type")
     .eq("id", id)
@@ -47,14 +48,17 @@ export async function PATCH(req, context) {
     )
   }
 
-  const ext = receipt.name?.split(".").pop()?.toLowerCase() || "bin"
+  const originalName = receipt.name || "receipt"
+  const ext = originalName.includes(".")
+    ? originalName.split(".").pop().toLowerCase()
+    : "bin"
+
   const safeExt = ext.replace(/[^a-z0-9]/g, "") || "bin"
+  const uploadPath = `${existingTx.user_id}/${existingTx.id}-${Date.now()}.${safeExt}`
 
- const receiptPath = `${existingTx.user_id}/${existingTx.id}-${Date.now()}.${safeExt}`
-
-  const { error: uploadError } = await supabase.storage
+  const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
     .from("receipts")
-    .upload(receiptPath, receipt, {
+    .upload(uploadPath, receipt, {
       upsert: false,
       contentType: receipt.type || undefined,
     })
@@ -66,11 +70,13 @@ export async function PATCH(req, context) {
     )
   }
 
-  const { data: tx, error: updateError } = await supabase
+  const storedPath = uploadData?.path || uploadPath
+
+  const { data: tx, error: updateError } = await supabaseAdmin
     .from("wallet_transactions")
     .update({
       status: "paid",
-      receipt_path: receiptPath,
+      receipt_path: storedPath,
       paid_at: new Date().toISOString(),
       paid_by: user.id,
       note: note || `Marked paid by admin ${user.id}`,
@@ -82,7 +88,10 @@ export async function PATCH(req, context) {
 
   if (updateError || !tx) {
     return NextResponse.json(
-      { error: "Failed to mark reward as paid" },
+      {
+        error: "Failed to mark reward as paid",
+        details: updateError?.message || null,
+      },
       { status: 500 }
     )
   }
@@ -91,5 +100,6 @@ export async function PATCH(req, context) {
     ok: true,
     message: "Reward marked as paid successfully",
     tx,
+    uploadPath: storedPath,
   })
 }

@@ -6,12 +6,14 @@ export default function RunWeeklyPayoutsButton() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [details, setDetails] = useState(null)
 
   const handleRun = async () => {
     try {
       setLoading(true)
       setMessage("")
       setError("")
+      setDetails(null)
 
       const res = await fetch("/api/admin/weekly-payouts/run", {
         method: "POST",
@@ -21,6 +23,7 @@ export default function RunWeeklyPayoutsButton() {
 
       if (!res.ok) {
         setError(json?.error || "Failed to run weekly payouts")
+        setDetails(json)
         return
       }
 
@@ -28,7 +31,9 @@ export default function RunWeeklyPayoutsButton() {
         `Done. Week ${json.weekStart} → ${json.weekEnd}. Winners: ${json.winnersCount}, Transactions: ${json.transactionsCount}`
       )
 
-      window.location.reload()
+      setTimeout(() => {
+        window.location.reload()
+      }, 1200)
     } catch (err) {
       setError("Something went wrong while running weekly payouts")
     } finally {
@@ -44,7 +49,7 @@ export default function RunWeeklyPayoutsButton() {
             Weekly payout generation
           </h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-white/60">
-            Create this week’s Top 5 winners and pending reward transactions.
+            Create the Top 5 winners and pending reward transactions for the closed week.
           </p>
         </div>
 
@@ -64,9 +69,19 @@ export default function RunWeeklyPayoutsButton() {
       ) : null}
 
       {error ? (
-        <p className="mt-3 text-sm text-rose-600 dark:text-rose-300">
-          {error}
-        </p>
+        <div className="mt-3">
+          <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>
+          {details?.weekStart ? (
+            <p className="mt-1 text-xs text-gray-600 dark:text-white/60">
+              Week checked: {details.weekStart} → {details.weekEnd}
+            </p>
+          ) : null}
+          {details?.hint ? (
+            <p className="mt-1 text-xs text-gray-600 dark:text-white/60">
+              {details.hint}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

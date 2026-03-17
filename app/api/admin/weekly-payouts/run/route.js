@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/requireAdmin"
 import { getClosedCompetitionWeek } from "@/lib/weeklyWindow"
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 
 export async function POST() {
   const admin = await requireAdmin()
@@ -12,42 +13,47 @@ export async function POST() {
     )
   }
 
-  const { supabase } = admin
   const { weekStart, weekEnd, resetAt } = getClosedCompetitionWeek()
 
-  // 1) Fetch the final top 5 for the closed week
-  // Ranking order:
-  // - highest points_total
-  // - highest correct_total
-  // - highest predictions_total
-  // - oldest updated_at first as final tie-breaker
-  const { data: top5, error: leaderboardError } = await supabase
-    .from("leaderboard_weekly")
-    .select("user_id, week_start, points_total, correct_total, predictions_total, updated_at")
-    .eq("week_start", weekStart)
-    .order("points_total", { ascending: false })
-    .order("correct_total", { ascending: false })
-    .order("predictions_total", { ascending: false })
-    .order("updated_at", { ascending: true })
-    .limit(5)
+  // Use SERVICE ROLE client here so RLS does not block admin backend work
+  const { data: existingLeaderboardRows, error: existingError } =
+    await supabaseAdmin
+      .from("leaderboard_weekly")
+      .select(
+        "user_id, week_start, points_total, correct_total, predictions_total, updated_at"
+      )
+      .eq("week_start", weekStart)
+      .order("points_total", { ascending: false })
+      .order("correct_total", { ascending: false })
+      .order("predictions_total", { ascending: false })
+      .order("updated_at", { ascending: true })
 
-  if (leaderboardError) {
+  if (existingError) {
     return NextResponse.json(
-      { error: leaderboardError.message },
+      {
+        error: "Failed to read leaderboard_weekly",
+        details: existingError.message,
+        weekStart,
+        weekEnd,
+      },
       { status: 500 }
     )
   }
 
-  if (!top5 || top5.length === 0) {
+  if (!existingLeaderboardRows || existingLeaderboardRows.length === 0) {
     return NextResponse.json(
       {
-        error: `No leaderboard_weekly rows found for closed week starting ${weekStart}`,
+        error: "No leaderboard_weekly rows found for the closed week",
+        weekStart,
+        weekEnd,
+        hint: "The rows may exist in SQL but be hidden from non-service-role clients by RLS.",
       },
       { status: 400 }
     )
   }
 
-  // 2) Build weekly_winners rows
+  const top5 = existingLeaderboardRows.slice(0, 5)
+
   const winnersPayload = top5.map((row, index) => ({
     week_start: weekStart,
     week_end: weekEnd,
@@ -56,8 +62,7 @@ export async function POST() {
     points: Number(row.points_total || 0),
   }))
 
-  // Upsert makes it retry-safe
-  const { data: winners, error: winnersError } = await supabase
+  const { data: winners, error: winnersError } = await supabaseAdmin
     .from("weekly_winners")
     .upsert(winnersPayload, {
       onConflict: "week_start,week_end,user_id",
@@ -66,12 +71,17 @@ export async function POST() {
 
   if (winnersError) {
     return NextResponse.json(
-      { error: winnersError.message },
+      {
+        error: "Failed to upsert weekly_winners",
+        details: winnersError.message,
+        weekStart,
+        weekEnd,
+        winnersPayload,
+      },
       { status: 500 }
     )
   }
 
-  // 3) Build wallet transaction rows
   const txPayload = winnersPayload.map((winner) => ({
     user_id: winner.user_id,
     week_start: winner.week_start,
@@ -82,7 +92,7 @@ export async function POST() {
     note: `Weekly Top 5 reward for rank ${winner.rank}. Reset processed at ${resetAt}`,
   }))
 
-  const { data: transactions, error: txError } = await supabase
+  const { data: transactions, error: txError } = await supabaseAdmin
     .from("wallet_transactions")
     .upsert(txPayload, {
       onConflict: "user_id,week_start,week_end,type",
@@ -91,16 +101,22 @@ export async function POST() {
 
   if (txError) {
     return NextResponse.json(
-      { error: txError.message },
+      {
+        error: "Failed to upsert wallet_transactions",
+        details: txError.message,
+        weekStart,
+        weekEnd,
+        txPayload,
+      },
       { status: 500 }
     )
   }
 
   return NextResponse.json({
     ok: true,
-    message: "Weekly winners and pending wallet rewards created successfully",
     weekStart,
     weekEnd,
+    leaderboardRowsFound: existingLeaderboardRows.length,
     winnersCount: winners?.length || 0,
     transactionsCount: transactions?.length || 0,
     winners,

@@ -9,6 +9,11 @@ function isIOS() {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
+function isAndroid() {
+  if (typeof navigator === "undefined") return false
+  return /Android/i.test(navigator.userAgent)
+}
+
 export default function EnablePushNotifications() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -27,7 +32,7 @@ export default function EnablePushNotifications() {
 
         if (browserGranted && json?.enabled) {
           setEnabled(true)
-          setMessage("Push notifications enabled.")
+          setMessage("Push notifications are enabled on your account.")
         }
       } catch (error) {
         console.error("Push status check failed:", error)
@@ -58,7 +63,7 @@ export default function EnablePushNotifications() {
       if (!messaging) {
         if (isIOS()) {
           setMessage(
-            "On iPhone/iPad, add Greenball360 to your Home Screen from Safari, open it from the Home Screen, then enable notifications there."
+            "On iPhone/iPad, open Greenball360 in Safari, add it to your Home Screen, then open it from the Home Screen to enable notifications."
           )
         } else {
           setMessage("This browser does not support push notifications.")
@@ -69,9 +74,13 @@ export default function EnablePushNotifications() {
       const permission = await Notification.requestPermission()
 
       if (permission !== "granted") {
-        setMessage(
-          "Notifications are blocked on this device. In Chrome, open site settings for greenball360.com and set Notifications to Allow."
-        )
+        if (isAndroid()) {
+          setMessage(
+            "Notifications are blocked on this device. In Chrome site settings for greenball360.com, set Notifications to Allow, then tap this button again."
+          )
+        } else {
+          setMessage("Notification permission was not granted.")
+        }
         return
       }
 
@@ -81,7 +90,7 @@ export default function EnablePushNotifications() {
       })
 
       if (!token) {
-        setMessage("Could not get a push token.")
+        setMessage("Could not get a push token for this device.")
         return
       }
 
@@ -105,7 +114,7 @@ export default function EnablePushNotifications() {
       })
 
       setEnabled(true)
-      setMessage("Push notifications enabled.")
+      setMessage("Push notifications enabled on this device.")
     } catch (error) {
       console.error("Enable push error:", error)
       setMessage(error?.message || "Something went wrong enabling notifications.")
@@ -128,7 +137,7 @@ export default function EnablePushNotifications() {
 
         <button
           onClick={enablePush}
-          disabled={loading || checking || enabled}
+          disabled={loading || checking}
           className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
         >
           {checking
@@ -136,7 +145,7 @@ export default function EnablePushNotifications() {
             : loading
             ? "Enabling..."
             : enabled
-            ? "Notifications Enabled"
+            ? "Enable on this device again"
             : "Enable notifications"}
         </button>
       </div>

@@ -69,7 +69,9 @@ export default function EnablePushNotifications() {
       const permission = await Notification.requestPermission()
 
       if (permission !== "granted") {
-        setMessage("Notification permission was not granted.")
+        setMessage(
+          "Notifications are blocked on this device. In Chrome, open site settings for greenball360.com and set Notifications to Allow."
+        )
         return
       }
 

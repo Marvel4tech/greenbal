@@ -9,8 +9,6 @@ import {
   Gamepad2,
   LogIn,
   Trophy,
-  User2,
-  Settings,
   Home,
   Wallet2,
 } from 'lucide-react'
@@ -144,8 +142,7 @@ const Page = () => {
   const lastLoginFormatted = formatLastLogin(stats.lastLogin)
 
   return (
-    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-24 md:pb-0 mb-10'>
-
+    <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-8 md:pb-10'>
       {/* Sidebar */}
       <aside className='hidden md:flex md:flex-col md:w-40 lg:w-56'>
         <div className='py-6 border-b border-primary'>
@@ -180,9 +177,7 @@ const Page = () => {
 
       {/* Main */}
       <main className='flex-1 bg-gray-100 dark:bg-gray-800 rounded-sm relative'>
-
         <div className='flex flex-col md:flex-row h-full py-6 px-4 md:px-8 gap-4'>
-
           {/* Left */}
           <div className='flex-1 bg-white dark:bg-black/70 border shadow-2xl'>
             <ProfileUserCard
@@ -193,7 +188,6 @@ const Page = () => {
 
           {/* Right */}
           <div className='flex-1 flex flex-col gap-6'>
-
             <div>
               {profileLoading ? (
                 <div className='rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-black/50 p-5'>
@@ -214,10 +208,8 @@ const Page = () => {
               )}
             </div>
 
-            {/* PUSH NOTIFICATION BUTTON */}
             <EnablePushNotifications />
 
-            {/* Stats */}
             <div className='bg-white dark:bg-black/70 border shadow-xl rounded-lg p-5'>
               <div className='flex items-center gap-2'>
                 <Gamepad2 className='w-5 h-5 text-primary' />
@@ -257,6 +249,19 @@ const Page = () => {
               </div>
             </div>
 
+            {/* Mobile logout */}
+            <div className='md:hidden bg-white dark:bg-black/70 border shadow-xl rounded-lg p-5 mb-8'>
+              <h2 className='text-sm font-semibold text-gray-900 dark:text-white'>
+                Account
+              </h2>
+              <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+                Sign out of your GreenBall360 profile.
+              </p>
+
+              <div className='mt-4'>
+                <SignOutButton />
+              </div>
+            </div>
           </div>
         </div>
       </main>

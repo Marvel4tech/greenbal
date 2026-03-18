@@ -71,10 +71,12 @@ const Page = () => {
 
   const [stats, setStats] = useState({
     predictions: 0,
+    totalGamesThisWeek: 0,
     correct: 0,
     points: 0,
     winRate: 0,
     weekStart: null,
+    weekEnd: null,
     lastLogin: null,
   })
 
@@ -210,42 +212,152 @@ const Page = () => {
 
             <EnablePushNotifications />
 
-            <div className='bg-white dark:bg-black/70 border shadow-xl rounded-lg p-5'>
-              <div className='flex items-center gap-2'>
-                <Gamepad2 className='w-5 h-5 text-primary' />
-                <h2 className='text-lg font-semibold'>Matches predicted this week</h2>
+            {/* Premium Stats Cards */}
+            <div className='grid gap-4'>
+              {/* Matches predicted */}
+              <div className='relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 p-5 shadow-xl'>
+                <div className='pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-primary/10 blur-3xl' />
+
+                <div className='relative'>
+                  <div className='flex items-center justify-between gap-3'>
+                    <div className='flex items-center gap-2'>
+                      <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
+                        <Gamepad2 className='w-5 h-5' />
+                      </div>
+                      <div>
+                        <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
+                          Matches predicted
+                        </h2>
+                        <p className='text-sm text-gray-500 dark:text-white/60'>
+                          Your current week progress
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className='rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary'>
+                      This week
+                    </div>
+                  </div>
+
+                  <div className='mt-5 flex items-end gap-2'>
+                    <span className='text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white'>
+                      {stats.predictions}
+                    </span>
+                    <span className='mb-1 text-xl font-semibold text-gray-500 dark:text-white/50'>
+                      / {stats.totalGamesThisWeek}
+                    </span>
+                  </div>
+
+                  <p className='mt-2 text-sm text-gray-600 dark:text-white/70'>
+                    You have predicted {stats.predictions} out of {stats.totalGamesThisWeek} matches in the current weekly round.
+                  </p>
+
+                  <div className='mt-4 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10'>
+                    <div
+                      className='h-2 rounded-full bg-primary transition-all duration-500'
+                      style={{
+                        width: `${
+                          stats.totalGamesThisWeek > 0
+                            ? (stats.predictions / stats.totalGamesThisWeek) * 100
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className='mt-4'>
-                <span className='text-4xl font-bold text-primary'>
-                  {stats.predictions}
-                </span>
-              </div>
-            </div>
+              {/* Win rate + points */}
+              <div className='grid gap-4 sm:grid-cols-2'>
+                <div className='rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 p-5 shadow-xl'>
+                  <div className='flex items-center gap-2'>
+                    <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-500'>
+                      <Trophy className='w-5 h-5' />
+                    </div>
+                    <div>
+                      <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
+                        Win Rate
+                      </h2>
+                      <p className='text-sm text-gray-500 dark:text-white/60'>
+                        Based on graded predictions
+                      </p>
+                    </div>
+                  </div>
 
-            <div className='bg-white dark:bg-black/70 border shadow-xl rounded-lg p-5'>
-              <div className='flex items-center gap-2'>
-                <Trophy className='w-5 h-5 text-yellow-500' />
-                <h2 className='text-lg font-semibold'>Win Rate</h2>
+                  <div className='mt-5 flex items-center justify-between gap-4'>
+                    <span className='text-4xl font-extrabold tracking-tight text-green-500'>
+                      {stats.winRate}%
+                    </span>
+
+                    <div className='w-24 h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden'>
+                      <div
+                        className='h-2 rounded-full bg-green-500 transition-all duration-500'
+                        style={{ width: `${stats.winRate}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <p className='mt-3 text-sm text-gray-600 dark:text-white/70'>
+                    Correct predictions:{" "}
+                    <span className='font-semibold text-gray-900 dark:text-white'>
+                      {stats.correct}
+                    </span>
+                  </p>
+                </div>
+
+                <div className='rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 p-5 shadow-xl'>
+                  <div className='flex items-center gap-2'>
+                    <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500'>
+                      <Trophy className='w-5 h-5' />
+                    </div>
+                    <div>
+                      <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
+                        Weekly Points
+                      </h2>
+                      <p className='text-sm text-gray-500 dark:text-white/60'>
+                        Your current leaderboard score
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className='mt-5'>
+                    <span className='text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white'>
+                      {stats.points}
+                    </span>
+                  </div>
+
+                  <p className='mt-3 text-sm text-gray-600 dark:text-white/70'>
+                    Week:{" "}
+                    <span className='font-medium text-gray-900 dark:text-white'>
+                      {stats.weekStart && stats.weekEnd
+                        ? `${stats.weekStart} → ${stats.weekEnd}`
+                        : "—"}
+                    </span>
+                  </p>
+                </div>
               </div>
 
-              <div className='mt-4'>
-                <span className='text-4xl font-bold text-green-500'>
-                  {stats.winRate}%
-                </span>
-              </div>
-            </div>
+              {/* Last login */}
+              <div className='rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 p-5 shadow-xl'>
+                <div className='flex items-center gap-2'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500'>
+                    <LogIn className='w-5 h-5' />
+                  </div>
+                  <div>
+                    <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
+                      Last Login
+                    </h2>
+                    <p className='text-sm text-gray-500 dark:text-white/60'>
+                      Your most recent account activity
+                    </p>
+                  </div>
+                </div>
 
-            <div className='bg-white dark:bg-black/70 border shadow-xl rounded-lg p-5'>
-              <div className='flex items-center gap-2'>
-                <LogIn className='w-5 h-5 text-purple-500' />
-                <h2 className='text-lg font-semibold'>Last Login</h2>
-              </div>
-
-              <div className='mt-4'>
-                <span className='text-base font-medium'>
-                  {lastLoginFormatted}
-                </span>
+                <div className='mt-5'>
+                  <span className='text-base font-semibold text-gray-900 dark:text-white'>
+                    {lastLoginFormatted}
+                  </span>
+                </div>
               </div>
             </div>
 

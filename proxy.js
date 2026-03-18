@@ -1,59 +1,75 @@
-import { NextResponse } from "next/server";
-import { createServerClientWrapper } from "./lib/supabase/server";
+import { NextResponse } from "next/server"
+import { createProxyClient } from "./lib/supabase/proxy"
 
 export async function proxy(request) {
-  const response = NextResponse.next()  // create response object
-  const supabase = await createServerClientWrapper()  // get server supabase client
-  const { data: { user } } = await supabase.auth.getUser()  // get current user
+  const { supabase, response } = createProxyClient(request)
 
-  // protect admin route which is the dashboard page
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url)) // redirect to login page if user is not authenticated
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    // check if user is not admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq("id", user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/profile', request.url)) // if not admin redirct user to profile
-    }
-  }
-
-  // protect user route which is the profile page
-  if (request.nextUrl.pathname.startsWith('/profile')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url)) // Redirect to login if not authenticated
-    }
-
-    // Check if user is admin and redirect to dashboard
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq("id", user.id)
-      .single()
-
-    if (profile?.role === 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url)) // redirect to dashboard since it's admin
-    }
-
-  }
-
-  // redirect authenticated users away from auth pages
-  if (['/login', '/register'].includes(request.nextUrl.pathname)) {
+  // redirect homepage if logged in
+  if (request.nextUrl.pathname === "/") {
     if (user) {
-      // Get user role to determine redirect destination
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
         .single()
 
-      const redirectPath = profile?.role === 'admin' ? '/dashboard' : '/profile'
+      const redirectPath =
+        profile?.role === "admin" ? "/dashboard" : "/profile"
+
+      return NextResponse.redirect(new URL(redirectPath, request.url))
+    }
+  }
+
+  // protect admin routes
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role !== "admin") {
+      return NextResponse.redirect(new URL("/profile", request.url))
+    }
+  }
+
+  // protect user routes
+  if (request.nextUrl.pathname.startsWith("/profile")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role === "admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+  }
+
+  // redirect logged-in users away from auth pages
+  if (["/login", "/register"].includes(request.nextUrl.pathname)) {
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+
+      const redirectPath =
+        profile?.role === "admin" ? "/dashboard" : "/profile"
+
       return NextResponse.redirect(new URL(redirectPath, request.url))
     }
   }
@@ -63,7 +79,10 @@ export async function proxy(request) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-  ]
+    "/",
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/login",
+    "/register",
+  ],
 }

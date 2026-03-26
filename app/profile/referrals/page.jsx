@@ -25,7 +25,10 @@ export default async function ReferralsPage() {
     .eq("referrer_id", user.id)
     .order("created_at", { ascending: false })
 
-  const referralLink = `${process.env.NEXT_PUBLIC_APP_URL}/signup?ref=${profile?.referral_code}`
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  
+  const referralLink = `${baseUrl}/signup?ref=${profile?.referral_code || ""}`
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10">

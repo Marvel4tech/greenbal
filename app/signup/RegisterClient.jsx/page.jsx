@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
-const Page = () => {
+const RegisterClient = () => {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -120,7 +120,7 @@ const Page = () => {
             </div>
           )}
 
-          <form className='w-full flex flex-col gap-5' onSubmit={handleSubmit} suppressHydrationWarning>
+          <form className='w-full flex flex-col gap-5' onSubmit={handleSubmit}>
             <div>
               <label htmlFor='username'>Username</label>
               <input
@@ -131,7 +131,6 @@ const Page = () => {
                 onChange={handleChange}
                 className='border-white/50 px-4 py-2 w-full border rounded-sm'
                 required
-                suppressHydrationWarning
               />
             </div>
 
@@ -145,7 +144,6 @@ const Page = () => {
                 onChange={handleChange}
                 className='border-white/50 px-4 py-2 w-full border rounded-sm'
                 required
-                suppressHydrationWarning
               />
             </div>
 
@@ -160,7 +158,6 @@ const Page = () => {
                   onChange={handleChange}
                   className='border-white/50 px-4 py-2 w-full border rounded-sm pr-10'
                   required
-                  suppressHydrationWarning
                 />
                 <button
                   type='button'
@@ -174,7 +171,7 @@ const Page = () => {
             </div>
 
             <Button type='submit' className='w-full rounded-sm font-semibold'>
-              {loading ? 'Creating Account...' : 'Register'}
+              {loading ? 'Creating Account...' : 'Sign up'}
             </Button>
           </form>
 
@@ -190,4 +187,4 @@ const Page = () => {
   )
 }
 
-export default Page
+export default RegisterClient

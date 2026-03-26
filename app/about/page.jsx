@@ -93,7 +93,7 @@ const Page = () => {
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <Button asChild className="gap-2">
-              <Link href="/register">
+              <Link href="/signup">
                 Create free account <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -188,7 +188,7 @@ const Page = () => {
               </p>
             </div>
             <Button asChild variant="outline">
-              <Link href="/register">Start playing</Link>
+              <Link href="/signup">Start playing</Link>
             </Button>
           </div>
 
@@ -222,7 +222,7 @@ const Page = () => {
 
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <Button asChild className="gap-2">
-              <Link href="/register">
+              <Link href="/signup">
                 Create free account <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>

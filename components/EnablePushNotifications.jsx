@@ -94,7 +94,7 @@ export default function EnablePushNotifications() {
         return
       }
 
-      const res = await fetch("/api/push/register", {
+      const res = await fetch("/api/push/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

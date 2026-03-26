@@ -129,7 +129,7 @@ const Page = () => {
           </div>
 
           <h1 className='self-center'>
-            Don't have an account? <span className='text-primary font-medium'><Link href={"/register"}>Register here</Link></span>
+            Don't have an account? <span className='text-primary font-medium'><Link href={"/signup"}>Sign up here</Link></span>
           </h1>
         </div>
       </div>

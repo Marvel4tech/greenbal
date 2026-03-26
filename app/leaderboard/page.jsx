@@ -260,7 +260,7 @@ const Page = () => {
 
                 <div className="mt-4 flex gap-2">
                   <Link
-                    href="/register"
+                    href="/signup"
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-black font-semibold text-sm hover:opacity-90 transition flex-1"
                   >
                     Create account <ArrowRight className="w-4 h-4" />
@@ -416,7 +416,7 @@ const Page = () => {
 
                   <div className="flex flex-col sm:flex-row gap-3 shrink-0">
                     <Link
-                      href="/register"
+                      href="/signup"
                       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-semibold text-sm hover:opacity-90 transition shadow-sm"
                     >
                       Join greenball360 <ArrowRight className="w-4 h-4" />

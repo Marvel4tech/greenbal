@@ -3,10 +3,11 @@
 import SignOutButton from '@/components/SignOutButton'
 import Link from 'next/link'
 import React, { useEffect, useMemo, useState } from 'react'
-import { FaChartBar, FaCog, FaFutbol, FaInfoCircle, FaMoneyBillWave, FaNewspaper, FaTools, FaTrophy, FaUsers } from 'react-icons/fa'
+import { FaChartBar, FaCog, FaFutbol, FaInfoCircle, FaMoneyBillWave, FaNewspaper, FaTools, FaTrophy, FaUsers, FaShareAlt } from 'react-icons/fa'
 
 const adminCards = [
   { title: 'Manage Games', href: '/dashboard/games', icon: <FaFutbol />, color: 'bg-green-100 dark:bg-green-900/30', desc: 'Create and update daily matches.' },
+  { title: 'Referrals', href: '/dashboard/referrals', icon: <FaShareAlt />, color: 'bg-blue-100 dark:bg-blue-900/30', desc: 'Track invites, referrals, and rewards.' },
   // { title: 'News & Blogs', href: '/dashboard/news', icon: <FaNewspaper />, color: 'bg-blue-100 dark:bg-blue-900/30', desc: 'Post football news and updates.' },
   // { title: 'Game Assistance', href: '/dashboard/assistance', icon: <FaInfoCircle />, color: 'bg-orange-100 dark:bg-orange-900/30', desc: 'Head-to-head or team stats.' },
   { title: 'Leaderboard', href: '/dashboard/leaderboard', icon: <FaTrophy />, color: 'bg-purple-100 dark:bg-purple-900/30', desc: 'See top players and scores.' },

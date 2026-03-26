@@ -160,10 +160,13 @@ export async function PATCH(request, context) {
 // DELETE: delete profile row (cascade handles related tables if FK ON DELETE CASCADE)
 export async function DELETE(request, context) {
   try {
-    const params = await context.params
-    const id = params.id
+    const { id } = await context.params
 
-    const { error } = await supabaseAdmin.from("profiles").delete().eq("id", id)
+    if (!id) {
+      return NextResponse.json({ error: "Missing user id" }, { status: 400 })
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

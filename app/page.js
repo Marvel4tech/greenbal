@@ -168,7 +168,7 @@ useEffect(() => {
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <Button className="gap-2" asChild>
-                    <Link href="/register">
+                    <Link href="/signup">
                       Create free account <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
@@ -270,7 +270,7 @@ useEffect(() => {
                 </p>
               </div>
               <Button variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10" asChild>
-                <Link href="/register">Start now</Link>
+                <Link href="/signup">Start now</Link>
               </Button>
             </div>
 

@@ -59,8 +59,8 @@ const Footer = () => {
 
               <FooterCol title="Account">
                 <FooterLink href="/login">Login</FooterLink>
-                <FooterLink href="/register">Register</FooterLink>
-                <FooterLink href="/register">Profile</FooterLink>
+                <FooterLink href="/signup">Sign up</FooterLink>
+                <FooterLink href="/signup">Profile</FooterLink>
               </FooterCol>
 
               <FooterCol title="Support">

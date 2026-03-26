@@ -30,7 +30,7 @@ const DashboardNavbar = async () => {
 
     if (profileError || !profile) {
         console.error('Profile fetch failed:', profileError)
-        redirect('/register')
+        redirect('/signup')
     }
 
     if (profile?.role !== 'admin') {

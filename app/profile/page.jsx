@@ -11,6 +11,8 @@ import {
   Trophy,
   Home,
   Wallet2,
+  User2,
+  Gift,
 } from 'lucide-react'
 
 import Link from 'next/link'
@@ -61,6 +63,7 @@ const Page = () => {
     { label: 'Leaderboard', href: '/profile/leaderboard', icon: Trophy },
     { label: 'Play', href: '/profile/play', icon: Gamepad2 },
     { label: 'Rewards Wallet', href: '/profile/wallet', icon: Wallet2 },
+    { label: 'Referrals', href: '/profile/referrals', icon: User2 }
   ]
 
   const isActive = (href) => pathname === href || pathname?.startsWith(href + '/')
@@ -142,6 +145,97 @@ const Page = () => {
   }, [])
 
   const lastLoginFormatted = formatLastLogin(stats.lastLogin)
+
+  // Draggable mobile referral button state
+  const buttonSize = 84
+  const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 })
+  const [fabReady, setFabReady] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const dragDataRef = useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+  })
+
+  useEffect(() => {
+    const setInitialPosition = () => {
+      if (typeof window === 'undefined') return
+
+      const padding = 16
+      const x = window.innerWidth - buttonSize - padding
+      const y = window.innerHeight - buttonSize - 110
+
+      setFabPosition({ x, y })
+      setFabReady(true)
+    }
+
+    setInitialPosition()
+
+    const handleResize = () => {
+      const padding = 16
+      setFabPosition((prev) => {
+        const maxX = window.innerWidth - buttonSize - padding
+        const maxY = window.innerHeight - buttonSize - padding
+
+        return {
+          x: Math.min(Math.max(prev.x, padding), maxX),
+          y: Math.min(Math.max(prev.y, padding), maxY),
+        }
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const handlePointerDown = (e) => {
+    dragDataRef.current.dragging = true
+    dragDataRef.current.moved = false
+    dragDataRef.current.startX = e.clientX
+    dragDataRef.current.startY = e.clientY
+    dragDataRef.current.offsetX = e.clientX - fabPosition.x
+    dragDataRef.current.offsetY = e.clientY - fabPosition.y
+    setIsDragging(false)
+  }
+
+  const handlePointerMove = (e) => {
+    if (!dragDataRef.current.dragging) return
+
+    const deltaX = Math.abs(e.clientX - dragDataRef.current.startX)
+    const deltaY = Math.abs(e.clientY - dragDataRef.current.startY)
+
+    if (deltaX > 5 || deltaY > 5) {
+      dragDataRef.current.moved = true
+      setIsDragging(true)
+    }
+
+    const padding = 12
+    const maxX = window.innerWidth - buttonSize - padding
+    const maxY = window.innerHeight - buttonSize - padding
+
+    const nextX = e.clientX - dragDataRef.current.offsetX
+    const nextY = e.clientY - dragDataRef.current.offsetY
+
+    setFabPosition({
+      x: Math.min(Math.max(nextX, padding), maxX),
+      y: Math.min(Math.max(nextY, padding), maxY),
+    })
+  }
+
+  const handlePointerUp = () => {
+    dragDataRef.current.dragging = false
+    setTimeout(() => setIsDragging(false), 50)
+  }
+
+  const handleFabClick = (e) => {
+    if (dragDataRef.current.moved || isDragging) {
+      e.preventDefault()
+    }
+  }
 
   return (
     <div className='flex flex-col md:flex-row min-h-[calc(100vh-5rem)] px-4 md:py-8 max-w-7xl mx-auto md:gap-12 pb-8 md:pb-10'>
@@ -298,7 +392,7 @@ const Page = () => {
                   </div>
 
                   <p className='mt-3 text-sm text-gray-600 dark:text-white/70'>
-                    Correct predictions:{" "}
+                    Correct predictions:{' '}
                     <span className='font-semibold text-gray-900 dark:text-white'>
                       {stats.correct}
                     </span>
@@ -327,11 +421,11 @@ const Page = () => {
                   </div>
 
                   <p className='mt-3 text-sm text-gray-600 dark:text-white/70'>
-                    Week:{" "}
+                    Week:{' '}
                     <span className='font-medium text-gray-900 dark:text-white'>
                       {stats.weekStart && stats.weekEnd
                         ? `${stats.weekStart} → ${stats.weekEnd}`
-                        : "—"}
+                        : '—'}
                     </span>
                   </p>
                 </div>
@@ -376,6 +470,30 @@ const Page = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile floating draggable referral button */}
+        {fabReady && (
+          <Link
+            href='/profile/referrals'
+            onClick={handleFabClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            className='md:hidden fixed z-50 flex flex-col items-center justify-center rounded-full bg-primary text-black shadow-2xl select-none touch-none'
+            style={{
+              left: `${fabPosition.x}px`,
+              top: `${fabPosition.y}px`,
+              width: `${buttonSize}px`,
+              height: `${buttonSize}px`,
+            }}
+          >
+            <Gift className='h-6 w-6' />
+            <span className='mt-1 text-[11px] font-semibold leading-none'>
+              Referrals
+            </span>
+          </Link>
+        )}
       </main>
     </div>
   )

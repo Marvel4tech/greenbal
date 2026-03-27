@@ -43,10 +43,13 @@ export async function GET() {
       return NextResponse.json({ error: referralsError.message }, { status: 500 })
     }
 
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+
     return NextResponse.json({
       profile,
       referrals: referrals || [],
-      referralLink: `${process.env.NEXT_PUBLIC_APP_URL}/signup?ref=${profile.referral_code}`,
+      referralLink: `${baseUrl}/signup?ref=${profile.referral_code}`,
     })
   } catch (error) {
     return NextResponse.json(

@@ -52,7 +52,11 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
       .filter((r) => r.status === "unlocked")
       .reduce((sum, r) => sum + Number(r.reward_amount_gbp || 0), 0)
 
-    return { total, unlocked, pending, expired, totalEarned }
+    const totalPendingAmount = referrals
+      .filter((r) => r.status === "pending" && r.played_first_game)
+      .reduce((sum, r) => sum + Number(r.reward_amount_gbp || 0), 0)
+
+    return { total, unlocked, pending, expired, totalEarned, totalPendingAmount }
   }, [referrals])
 
   const copyToClipboard = async (text, type = "link") => {
@@ -111,10 +115,9 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
         </h1>
 
         <p className="mt-2 max-w-2xl text-gray-600 dark:text-white/70">
-          Invite a friend and immediately get a{" "}
-          <span className="font-semibold text-primary">£2 locked bonus</span>.
-          It unlocks after your friend plays their first game and reaches the Top 20
-          within 30 days.
+          Invite a friend using your referral link or code. After they play their first game,
+          you receive a <span className="font-semibold text-primary">£2 locked bonus</span>.
+          The bonus unlocks if they reach the Top 20 within 30 days.
         </p>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -190,11 +193,20 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
         <StatCard icon={XCircle} label="Expired bonuses" value={stats.expired} />
       </div>
 
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 p-5">
-        <p className="text-sm text-gray-500 dark:text-white/50">Total earned</p>
-        <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
-          £{stats.totalEarned.toFixed(2)}
-        </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 p-5">
+          <p className="text-sm text-gray-500 dark:text-white/50">Total earned</p>
+          <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+            £{stats.totalEarned.toFixed(2)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 p-5">
+          <p className="text-sm text-gray-500 dark:text-white/50">Locked bonus total</p>
+          <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+            £{stats.totalPendingAmount.toFixed(2)}
+          </p>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 overflow-hidden">
@@ -208,7 +220,7 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    £{Number(r.reward_amount_gbp).toFixed(2)} Referral Bonus
+                    £{Number(r.reward_amount_gbp || 0).toFixed(2)} Referral Bonus
                   </p>
 
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
@@ -234,7 +246,7 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
                   </div>
 
                   <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
-                    Expires: {new Date(r.expires_at).toLocaleString()}
+                    Expires: {r.expires_at ? new Date(r.expires_at).toLocaleString() : "—"}
                   </p>
                 </div>
 
@@ -256,9 +268,10 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">How it works</h3>
         <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-white/70">
           <p>1. Share your referral link or code with a friend.</p>
-          <p>2. When they sign up, you receive a £2 locked referral bonus.</p>
-          <p>3. The bonus unlocks only after they play their first game and reach the Top 20 within 30 days.</p>
-          <p>4. If they do not complete the conditions before expiry, the reward becomes expired.</p>
+          <p>2. When they sign up, the referral is linked to your account.</p>
+          <p>3. After they play their first game, you receive a £2 locked referral bonus.</p>
+          <p>4. The bonus unlocks if they reach the Top 20 within 30 days.</p>
+          <p>5. If they do not complete the conditions before expiry, the reward becomes expired.</p>
         </div>
       </div>
     </div>

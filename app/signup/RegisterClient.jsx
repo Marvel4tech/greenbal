@@ -30,7 +30,7 @@ const RegisterClient = () => {
   }, [ref])
 
   const passwordShowVisibility = () => {
-    setShowPassword(!showPassword)
+    setShowPassword((prev) => !prev)
   }
 
   const handleChange = (e) => {
@@ -49,12 +49,16 @@ const RegisterClient = () => {
     try {
       localStorage.setItem('signup_email', formData.email)
 
+      const referralCode =
+        ref || localStorage.getItem('pending_referral_code') || null
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             username: formData.username,
+            referred_by_code: referralCode,
           },
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         },
@@ -74,6 +78,7 @@ const RegisterClient = () => {
             userId: authData.user.id,
             username: formData.username,
             email: formData.email,
+            referralCode,
           }),
         })
 
@@ -84,9 +89,10 @@ const RegisterClient = () => {
         }
       }
 
+      localStorage.removeItem('pending_referral_code')
       router.push('/verify-email')
     } catch (error) {
-      setError(error.message)
+      setError(error.message || 'Something went wrong')
     } finally {
       setLoading(false)
     }

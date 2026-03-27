@@ -1,6 +1,88 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+async function ensureWallet(supabase, userId) {
+  let { data: wallet, error: walletFetchError } = await supabase
+    .from("wallets")
+    .select("id, user_id, available_balance_gbp, pending_balance_gbp")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (walletFetchError) {
+    throw new Error(walletFetchError.message)
+  }
+
+  if (!wallet) {
+    const { data: newWallet, error: walletCreateError } = await supabase
+      .from("wallets")
+      .insert({
+        user_id: userId,
+        available_balance_gbp: 0,
+        pending_balance_gbp: 0,
+      })
+      .select()
+      .single()
+
+    if (walletCreateError) {
+      throw new Error(walletCreateError.message)
+    }
+
+    wallet = newWallet
+  }
+
+  return wallet
+}
+
+async function createPendingReferralBonusIfMissing(supabase, referral) {
+  const { data: existingTx, error: txCheckError } = await supabase
+    .from("wallet_transactions")
+    .select("id, amount_gbp, status")
+    .eq("referral_id", referral.id)
+    .eq("type", "referral_bonus")
+    .maybeSingle()
+
+  if (txCheckError) {
+    throw new Error(txCheckError.message)
+  }
+
+  if (existingTx) {
+    return existingTx
+  }
+
+  const wallet = await ensureWallet(supabase, referral.referrer_id)
+  const rewardAmount = Number(referral.reward_amount_gbp || 2)
+
+  const { data: newTx, error: txInsertError } = await supabase
+    .from("wallet_transactions")
+    .insert({
+      user_id: referral.referrer_id,
+      amount_gbp: rewardAmount,
+      status: "pending",
+      type: "referral_bonus",
+      referral_id: referral.id,
+      expires_at: referral.expires_at,
+    })
+    .select()
+    .single()
+
+  if (txInsertError) {
+    throw new Error(txInsertError.message)
+  }
+
+  const { error: walletUpdateError } = await supabase
+    .from("wallets")
+    .update({
+      pending_balance_gbp: Number(wallet.pending_balance_gbp || 0) + rewardAmount,
+    })
+    .eq("id", wallet.id)
+
+  if (walletUpdateError) {
+    throw new Error(walletUpdateError.message)
+  }
+
+  return newTx
+}
+
 export async function GET(req) {
   try {
     const authHeader = req.headers.get("authorization")
@@ -31,7 +113,6 @@ export async function GET(req) {
       }
     )
 
-    // 1) Refresh latest leaderboard ranks
     const { error: rankError } = await supabase.rpc(
       "refresh_latest_leaderboard_weekly_ranks"
     )
@@ -40,7 +121,6 @@ export async function GET(req) {
       return NextResponse.json({ error: rankError.message }, { status: 500 })
     }
 
-    // 2) Process pending referrals
     const now = new Date()
     const nowIso = now.toISOString()
 
@@ -54,17 +134,29 @@ export async function GET(req) {
     }
 
     for (const ref of referrals || []) {
-      let played = ref.played_first_game
-      let top20 = ref.reached_top20
+      let played = Boolean(ref.played_first_game)
+      let top20 = Boolean(ref.reached_top20)
 
-      const createdAt = new Date(ref.created_at)
-      const expiresAt = new Date(ref.expires_at)
+      const createdAt = ref.created_at ? new Date(ref.created_at) : null
+      const expiresAt = ref.expires_at ? new Date(ref.expires_at) : null
+
+      if (!createdAt || Number.isNaN(createdAt.getTime())) {
+        return NextResponse.json(
+          { error: `Invalid created_at for referral ${ref.id}` },
+          { status: 500 }
+        )
+      }
+
+      if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
+        return NextResponse.json(
+          { error: `Invalid expires_at for referral ${ref.id}` },
+          { status: 500 }
+        )
+      }
 
       const windowStart = createdAt.toISOString().slice(0, 10)
       const windowEnd = expiresAt.toISOString().slice(0, 10)
 
-      // Check if referred user has played at least one game
-      // Only count leaderboard rows inside the referral validity window
       if (!played) {
         const { data: playedRow, error: playedError } = await supabase
           .from("leaderboard_weekly")
@@ -86,7 +178,10 @@ export async function GET(req) {
 
           const { error: updatePlayedError } = await supabase
             .from("referrals")
-            .update({ played_first_game: true })
+            .update({
+              played_first_game: true,
+              updated_at: nowIso,
+            })
             .eq("id", ref.id)
 
           if (updatePlayedError) {
@@ -95,11 +190,11 @@ export async function GET(req) {
               { status: 500 }
             )
           }
+
+          await createPendingReferralBonusIfMissing(supabase, ref)
         }
       }
 
-      // Check if referred user reached Top 20
-      // Only count weekly leaderboard rows inside the 30-day referral window
       if (!top20) {
         const { data: rankRow, error: rankCheckError } = await supabase
           .from("leaderboard_weekly")
@@ -121,7 +216,10 @@ export async function GET(req) {
 
           const { error: updateTop20Error } = await supabase
             .from("referrals")
-            .update({ reached_top20: true })
+            .update({
+              reached_top20: true,
+              updated_at: nowIso,
+            })
             .eq("id", ref.id)
 
           if (updateTop20Error) {
@@ -133,8 +231,9 @@ export async function GET(req) {
         }
       }
 
-      // Unlock referral reward
       if (played && top20) {
+        const tx = await createPendingReferralBonusIfMissing(supabase, ref)
+
         const { error: unlockReferralError } = await supabase
           .from("referrals")
           .update({
@@ -142,8 +241,10 @@ export async function GET(req) {
             played_first_game: true,
             reached_top20: true,
             unlocked_at: nowIso,
+            updated_at: nowIso,
           })
           .eq("id", ref.id)
+          .eq("status", "pending")
 
         if (unlockReferralError) {
           return NextResponse.json(
@@ -152,26 +253,25 @@ export async function GET(req) {
           )
         }
 
-        const { data: tx, error: txError } = await supabase
+        const { data: freshTx, error: txError } = await supabase
           .from("wallet_transactions")
           .select("*")
-          .eq("referral_id", ref.id)
-          .eq("type", "referral_bonus")
-          .eq("status", "pending")
+          .eq("id", tx.id)
           .maybeSingle()
 
         if (txError) {
           return NextResponse.json({ error: txError.message }, { status: 500 })
         }
 
-        if (tx) {
+        if (freshTx && freshTx.status === "pending") {
           const { error: txUpdateError } = await supabase
             .from("wallet_transactions")
             .update({
               status: "available",
               unlocked_at: nowIso,
             })
-            .eq("id", tx.id)
+            .eq("id", freshTx.id)
+            .eq("status", "pending")
 
           if (txUpdateError) {
             return NextResponse.json(
@@ -180,23 +280,19 @@ export async function GET(req) {
             )
           }
 
-          const { data: wallet, error: walletError } = await supabase
-            .from("wallets")
-            .select("id, available_balance_gbp, pending_balance_gbp")
-            .eq("user_id", tx.user_id)
-            .single()
+          const wallet = await ensureWallet(supabase, freshTx.user_id)
 
-          if (walletError) {
-            return NextResponse.json({ error: walletError.message }, { status: 500 })
-          }
+          const newPending = Math.max(
+            0,
+            Number(wallet.pending_balance_gbp || 0) - Number(freshTx.amount_gbp || 0)
+          )
 
           const { error: walletUpdateError } = await supabase
             .from("wallets")
             .update({
               available_balance_gbp:
-                Number(wallet.available_balance_gbp || 0) + Number(tx.amount_gbp || 0),
-              pending_balance_gbp:
-                Number(wallet.pending_balance_gbp || 0) - Number(tx.amount_gbp || 0),
+                Number(wallet.available_balance_gbp || 0) + Number(freshTx.amount_gbp || 0),
+              pending_balance_gbp: newPending,
             })
             .eq("id", wallet.id)
 
@@ -211,15 +307,16 @@ export async function GET(req) {
         continue
       }
 
-      // Expire referral if window has passed and it is still pending
       if (expiresAt < now) {
         const { error: expireReferralError } = await supabase
           .from("referrals")
           .update({
             status: "expired",
             expired_at: nowIso,
+            updated_at: nowIso,
           })
           .eq("id", ref.id)
+          .eq("status", "pending")
 
         if (expireReferralError) {
           return NextResponse.json(
@@ -247,6 +344,7 @@ export async function GET(req) {
               status: "expired",
             })
             .eq("id", tx.id)
+            .eq("status", "pending")
 
           if (txExpireError) {
             return NextResponse.json(
@@ -255,15 +353,7 @@ export async function GET(req) {
             )
           }
 
-          const { data: wallet, error: walletError } = await supabase
-            .from("wallets")
-            .select("id, pending_balance_gbp")
-            .eq("user_id", tx.user_id)
-            .single()
-
-          if (walletError) {
-            return NextResponse.json({ error: walletError.message }, { status: 500 })
-          }
+          const wallet = await ensureWallet(supabase, tx.user_id)
 
           const newPending = Math.max(
             0,

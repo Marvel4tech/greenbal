@@ -10,11 +10,11 @@ import {
   Trophy,
   User,
   CheckCircle2,
+  ArrowLeft,
 } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useMemo, useState } from "react"
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import Link from "next/link"
 
 const labelPrediction = (p) => {
   if (p === "homeWin") return "Home Win"
@@ -26,7 +26,11 @@ const labelPrediction = (p) => {
 const formatDate = (iso) => {
   if (!iso) return "—"
   const d = new Date(iso)
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
 }
 
 const formatDateTime = (iso) => {
@@ -60,7 +64,9 @@ const Page = () => {
       setError("")
       setLoading(true)
 
-      const res = await fetch(`/api/admin/users/${userId}?recent=10`, { cache: "no-store" })
+      const res = await fetch(`/api/admin/users/${userId}?recent=10`, {
+        cache: "no-store",
+      })
       const text = await res.text()
       let data
       try {
@@ -87,18 +93,23 @@ const Page = () => {
   useEffect(() => {
     if (!userId) return
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
   const onDelete = async () => {
-    const ok = confirm("Delete this user profile? This cannot be undone.")
+    const ok = confirm(
+      "Delete this user? Their profile will be archived, auth email will be replaced, and the original email can be used again."
+    )
     if (!ok) return
 
     try {
       setDeleting(true)
       setError("")
 
-      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" })
+      const reason = encodeURIComponent("Deleted by admin")
+      const res = await fetch(`/api/admin/users/${userId}?reason=${reason}`, {
+        method: "DELETE",
+      })
+
       const text = await res.text()
       let data
       try {
@@ -108,6 +119,7 @@ const Page = () => {
       }
 
       if (!res.ok) throw new Error(data?.error || "Failed to delete user")
+
       router.push("/dashboard/users")
     } catch (e) {
       setError(e.message)
@@ -158,10 +170,9 @@ const Page = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6 mb-10">
-      {/* Back button - visible on all devices */}
       <div className="mb-2">
-        <Link 
-          href="/dashboard/users" 
+        <Link
+          href="/dashboard/users"
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -169,7 +180,6 @@ const Page = () => {
         </Link>
       </div>
 
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">User Details</h1>
@@ -187,9 +197,11 @@ const Page = () => {
         <div className="flex gap-2">
           <button
             onClick={toggleBan}
-            disabled={banLoading || loading || !user}
+            disabled={banLoading || loading || !user || user?.is_deleted}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-white transition disabled:opacity-60 ${
-              user?.is_banned ? "bg-green-600 hover:bg-green-700" : "bg-yellow-500 hover:bg-yellow-600"
+              user?.is_banned
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-yellow-500 hover:bg-yellow-600"
             }`}
           >
             {user?.is_banned ? (
@@ -205,15 +217,14 @@ const Page = () => {
 
           <button
             onClick={onDelete}
-            disabled={deleting || loading}
+            disabled={deleting || loading || user?.is_deleted}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60"
           >
-            <Trash2 className="w-4 h-4" /> {deleting ? "Deleting…" : "Delete"}
+            <Trash2 className="w-4 h-4" /> {deleting ? "Deleting…" : user?.is_deleted ? "Deleted" : "Delete"}
           </button>
         </div>
       </div>
 
-      {/* Profile Card */}
       <div className="bg-white dark:bg-black/40 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-6 flex flex-col md:flex-row items-center gap-6">
         <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
           <User className="w-12 h-12 text-primary" />
@@ -227,12 +238,16 @@ const Page = () => {
           </div>
         ) : user ? (
           <div className="space-y-2 text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-2">
+            <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
               <h2 className="text-xl font-semibold">
                 {user.full_name || user.username || "Unnamed user"}
               </h2>
 
-              {user.is_banned ? (
+              {user.is_deleted ? (
+                <span className="text-[11px] px-2 py-1 rounded-full bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                  DELETED
+                </span>
+              ) : user.is_banned ? (
                 <span className="text-[11px] px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200">
                   BANNED
                 </span>
@@ -246,7 +261,7 @@ const Page = () => {
             <div className="flex flex-wrap justify-center md:justify-start gap-3 text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-1">
                 <Mail className="w-4 h-4" />
-                <span>{user.email || "—"}</span>
+                <span>{user.email || user.archived_email || "—"}</span>
               </div>
 
               <div className="flex items-center gap-1">
@@ -261,13 +276,17 @@ const Page = () => {
             </div>
 
             <p className="text-sm text-gray-500">Joined: {joined}</p>
+            {user.is_deleted ? (
+              <p className="text-sm text-red-500">
+                Deleted: {formatDateTime(user.deleted_at)}
+              </p>
+            ) : null}
           </div>
         ) : (
           <p className="text-sm text-gray-500">No user found.</p>
         )}
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-black/40 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3">
           <Activity className="w-6 h-6 text-blue-600" />
@@ -294,7 +313,6 @@ const Page = () => {
         </div>
       </div>
 
-      {/* Predictions Table */}
       <div className="bg-white dark:bg-black/40 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-semibold">Recent Predictions</h2>
@@ -303,66 +321,69 @@ const Page = () => {
           </button>
         </div>
 
-        <table className="w-full text-sm md:text-base">
-          <thead className="bg-primary text-white">
-            <tr>
-              <th className="p-3 text-left">Game</th>
-              <th className="p-3 text-left">Kickoff</th>
-              <th className="p-3 text-left">Prediction</th>
-              <th className="p-3 text-left">Result</th>
-              <th className="p-3 text-left">Points</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {!loading &&
-              preds.map((p) => {
-                const g = p.games
-                const gameLabel = g ? `${g.home_team} vs ${g.away_team}` : "—"
-                const kickoff = g?.match_time ? formatDateTime(g.match_time) : "—"
-
-                const finished = g?.status === "finished"
-                const correct = finished && g?.result && p?.prediction === g?.result
-
-                return (
-                  <tr
-                    key={p.id}
-                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                  >
-                    <td className="p-3">{gameLabel}</td>
-                    <td className="p-3">{kickoff}</td>
-                    <td className="p-3">{labelPrediction(p.prediction)}</td>
-                    <td className="p-3">
-                      {!finished ? (
-                        <span className="text-gray-500">Pending</span>
-                      ) : correct ? (
-                        <span className="text-green-600 font-medium">✅ Correct</span>
-                      ) : (
-                        <span className="text-red-500 font-medium">❌ Wrong</span>
-                      )}
-                    </td>
-                    <td className="p-3 font-semibold">{Number(p.points ?? 0)}</td>
-                  </tr>
-                )
-              })}
-
-            {!loading && preds.length === 0 && (
+        {/* Horizontal scroll wrapper for mobile */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm md:text-base min-w-[640px]">
+            <thead className="bg-primary text-white">
               <tr>
-                <td colSpan="5" className="text-center py-10 text-gray-500">
-                  No predictions yet.
-                </td>
+                <th className="p-3 text-left">Game</th>
+                <th className="p-3 text-left">Kickoff</th>
+                <th className="p-3 text-left">Prediction</th>
+                <th className="p-3 text-left">Result</th>
+                <th className="p-3 text-left">Points</th>
               </tr>
-            )}
+            </thead>
 
-            {loading && (
-              <tr>
-                <td colSpan="5" className="text-center py-10 text-gray-500">
-                  Loading predictions…
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <tbody>
+              {!loading &&
+                preds.map((p) => {
+                  const g = p.games
+                  const gameLabel = g ? `${g.home_team} vs ${g.away_team}` : "—"
+                  const kickoff = g?.match_time ? formatDateTime(g.match_time) : "—"
+
+                  const finished = g?.status === "finished"
+                  const correct = finished && g?.result && p?.prediction === g?.result
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                      <td className="p-3">{gameLabel}</td>
+                      <td className="p-3">{kickoff}</td>
+                      <td className="p-3">{labelPrediction(p.prediction)}</td>
+                      <td className="p-3">
+                        {!finished ? (
+                          <span className="text-gray-500">Pending</span>
+                        ) : correct ? (
+                          <span className="text-green-600 font-medium">✅ Correct</span>
+                        ) : (
+                          <span className="text-red-500 font-medium">❌ Wrong</span>
+                        )}
+                      </td>
+                      <td className="p-3 font-semibold">{Number(p.points ?? 0)}</td>
+                    </tr>
+                  )
+                })}
+
+              {!loading && preds.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-10 text-gray-500">
+                    No predictions yet.
+                  </td>
+                </tr>
+              )}
+
+              {loading && (
+                <tr>
+                  <td colSpan="5" className="text-center py-10 text-gray-500">
+                    Loading predictions…
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

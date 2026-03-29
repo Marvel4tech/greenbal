@@ -1,28 +1,44 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 import { createServerClientWrapper } from "@/lib/supabase/server"
+
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
+}
 
 export async function POST(request) {
   try {
-    const supabase = await createServerClientWrapper()
+    const sessionSupabase = await createServerClientWrapper()
 
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await sessionSupabase.auth.getUser()
 
     if (userError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data: adminProfile } = await supabase
+    const { data: adminProfile, error: adminProfileError } = await sessionSupabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single()
 
-    if (adminProfile?.role !== "admin") {
+    if (adminProfileError || adminProfile?.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
+
+    const supabase = createAdminClient()
 
     const body = await request.json()
     const referralId = body?.referralId
@@ -62,6 +78,7 @@ export async function POST(request) {
         voided_at: now,
         voided_by: user.id,
         admin_note: adminNote,
+        updated_at: now,
       })
       .eq("id", referralId)
       .select(`
@@ -87,13 +104,17 @@ export async function POST(request) {
       return NextResponse.json({ error: updateReferralError.message }, { status: 500 })
     }
 
-    const { data: tx } = await supabase
+    const { data: tx, error: txFetchError } = await supabase
       .from("wallet_transactions")
       .select("*")
       .eq("referral_id", referralId)
       .eq("type", "referral_bonus")
       .eq("status", "pending")
       .maybeSingle()
+
+    if (txFetchError) {
+      return NextResponse.json({ error: txFetchError.message }, { status: 500 })
+    }
 
     if (tx) {
       const { error: txUpdateError } = await supabase
@@ -110,28 +131,30 @@ export async function POST(request) {
         return NextResponse.json({ error: txUpdateError.message }, { status: 500 })
       }
 
-      const { data: wallet } = await supabase
+      const { data: wallet, error: walletFetchError } = await supabase
         .from("wallets")
         .select("id, pending_balance_gbp")
         .eq("user_id", tx.user_id)
         .single()
 
-      if (wallet?.id) {
-        const newPending = Math.max(
-          0,
-          Number(wallet.pending_balance_gbp || 0) - Number(tx.amount_gbp || 0)
-        )
+      if (walletFetchError) {
+        return NextResponse.json({ error: walletFetchError.message }, { status: 500 })
+      }
 
-        const { error: walletError } = await supabase
-          .from("wallets")
-          .update({
-            pending_balance_gbp: newPending,
-          })
-          .eq("id", wallet.id)
+      const newPending = Math.max(
+        0,
+        Number(wallet.pending_balance_gbp || 0) - Number(tx.amount_gbp || 0)
+      )
 
-        if (walletError) {
-          return NextResponse.json({ error: walletError.message }, { status: 500 })
-        }
+      const { error: walletError } = await supabase
+        .from("wallets")
+        .update({
+          pending_balance_gbp: newPending,
+        })
+        .eq("id", wallet.id)
+
+      if (walletError) {
+        return NextResponse.json({ error: walletError.message }, { status: 500 })
       }
     }
 

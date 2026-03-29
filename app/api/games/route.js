@@ -1,11 +1,11 @@
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
+import { withAdminLog } from "@/lib/withAdminLog";
 import { NextResponse } from "next/server";
 
 const TZ = "Europe/London";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const PUSH_FUNCTION_URL =
-  `${SUPABASE_URL}/functions/v1/send-game-push`;
+const PUSH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-game-push`;
 
 // functions begin
 function parseGmtOffsetToMinutes(gmt) {
@@ -106,9 +106,9 @@ export async function GET(request) {
   return NextResponse.json(data || []);
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const body = await req.json();
+    const body = await request.json();
     const { homeTeam, awayTeam, matchTime } = body;
 
     if (!homeTeam || !awayTeam || !matchTime) {
@@ -118,50 +118,68 @@ export async function POST(req) {
       );
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("games")
-      .insert([
-        {
-          home_team: homeTeam,
-          away_team: awayTeam,
-          match_time: matchTime,
-          status: "upcoming",
+    return await withAdminLog(
+      request,
+      async ({ admin }) => {
+        const { data, error } = await supabaseAdmin
+          .from("games")
+          .insert([
+            {
+              home_team: homeTeam,
+              away_team: awayTeam,
+              match_time: matchTime,
+              status: "upcoming",
+            },
+          ])
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        try {
+          const pushRes = await fetch(PUSH_FUNCTION_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+            },
+            body: JSON.stringify({
+              title: "New game posted",
+              message: `${homeTeam} vs ${awayTeam} is now live for predictions.`,
+              link: "/profile/play",
+            }),
+          });
+
+          const pushJson = await pushRes.json().catch(() => null);
+
+          if (!pushRes.ok) {
+            console.error("Push notification failed:", pushJson || pushRes.statusText);
+          }
+        } catch (pushError) {
+          console.error("Push notification error:", pushError);
+        }
+
+        return NextResponse.json(data);
+      },
+      {
+        action: "game_created",
+        message: (admin) =>
+          `${admin.username || admin.email || admin.id} created game: ${homeTeam} vs ${awayTeam}`,
+        path: "/dashboard/games",
+        metadata: {
+          homeTeam,
+          awayTeam,
+          matchTime,
         },
-      ])
-      .select();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    const createdGame = data?.[0];
-
-    try {
-      const pushRes = await fetch(PUSH_FUNCTION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-        },
-        body: JSON.stringify({
-          title: "New game posted",
-          message: `${homeTeam} vs ${awayTeam} is now live for predictions.`,
-          link: "/profile/play",
-        }),
-      });
-
-      const pushJson = await pushRes.json().catch(() => null);
-
-      if (!pushRes.ok) {
-        console.error("Push notification failed:", pushJson || pushRes.statusText);
       }
-    } catch (pushError) {
-      console.error("Push notification error:", pushError);
-    }
-
-    return NextResponse.json(createdGame);
+    );
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const status =
+      err.message === "Unauthorized" ? 401 : err.message === "Forbidden" ? 403 : 500;
+
+    return NextResponse.json({ error: err.message }, { status });
   }
 }

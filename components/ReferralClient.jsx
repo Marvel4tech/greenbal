@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Share2, Copy, Check, Users, Gift, Clock, XCircle, MessageCircle, Twitter } from "lucide-react"
 
 function StatusBadge({ status }) {
@@ -37,10 +37,42 @@ function StatCard({ icon: Icon, label, value }) {
   )
 }
 
+// Helper function to format date in UK format (DD/MM/YYYY, HH:MM:SS)
+function formatUKDate(dateString) {
+  if (!dateString) return "—"
+  const date = new Date(dateString)
+  
+  // Use UTC methods to avoid timezone inconsistencies
+  const day = date.getUTCDate().toString().padStart(2, '0')
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const hours = date.getUTCHours().toString().padStart(2, '0')
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0')
+  const seconds = date.getUTCSeconds().toString().padStart(2, '0')
+  
+  return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`
+}
+
+// Client-only date component to prevent hydration mismatch
+function ExpiryDate({ expiresAt }) {
+  const [formattedDate, setFormattedDate] = useState("—")
+
+  useEffect(() => {
+    setFormattedDate(formatUKDate(expiresAt))
+  }, [expiresAt])
+
+  return <span>{formattedDate}</span>
+}
+
 export default function ReferralClient({ referralCode, referralLink, referrals = [] }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const stats = useMemo(() => {
     const total = referrals.length
@@ -106,6 +138,19 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
   const twitterShare = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `Join me on greenball360 with my referral code ${referralCode}! ${referralLink}`
   )}`
+
+  // Prevent hydration mismatch by not rendering date-dependent content until mounted
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        {/* Skeleton loader or just return null while not mounted */}
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 p-6">
+          <div className="h-8 w-48 bg-gray-200 dark:bg-white/10 rounded animate-pulse mb-4" />
+          <div className="h-4 w-full max-w-2xl bg-gray-200 dark:bg-white/10 rounded animate-pulse" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -246,7 +291,7 @@ export default function ReferralClient({ referralCode, referralLink, referrals =
                   </div>
 
                   <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
-                    Expires: {r.expires_at ? new Date(r.expires_at).toLocaleString() : "—"}
+                    Expires: <ExpiryDate expiresAt={r.expires_at} />
                   </p>
                 </div>
 

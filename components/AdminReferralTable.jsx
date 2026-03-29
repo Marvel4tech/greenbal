@@ -38,7 +38,27 @@ function StatCard({ label, value }) {
   )
 }
 
-export default function AdminReferralTable({ initialReferrals }) {
+const londonDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/London",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+})
+
+function formatDate(value) {
+  if (!value) return "—"
+
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return "—"
+
+  return londonDateFormatter.format(d)
+}
+
+export default function AdminReferralTable({ initialReferrals = [] }) {
   const [referrals, setReferrals] = useState(initialReferrals)
   const [busyId, setBusyId] = useState(null)
   const [filter, setFilter] = useState("all")
@@ -52,7 +72,7 @@ export default function AdminReferralTable({ initialReferrals }) {
     const voided = referrals.filter((r) => r.status === "voided").length
 
     const lockedAmount = referrals
-      .filter((r) => r.status === "pending")
+      .filter((r) => r.status === "pending" && r.played_first_game)
       .reduce((sum, r) => sum + Number(r.reward_amount_gbp || 0), 0)
 
     const unlockedAmount = referrals
@@ -98,6 +118,8 @@ export default function AdminReferralTable({ initialReferrals }) {
       setReferrals((prev) =>
         prev.map((r) => (r.id === referralId ? json.referral : r))
       )
+    } catch (error) {
+      alert(error?.message || "Failed to void referral")
     } finally {
       setBusyId(null)
     }
@@ -111,7 +133,10 @@ export default function AdminReferralTable({ initialReferrals }) {
         <StatCard label="Unlocked bonuses" value={stats.unlocked} />
         <StatCard label="Expired bonuses" value={stats.expired} />
         <StatCard label="Voided bonuses" value={stats.voided} />
-        <StatCard label="Locked £ / Unlocked £" value={`£${stats.lockedAmount.toFixed(2)} / £${stats.unlockedAmount.toFixed(2)}`} />
+        <StatCard
+          label="Locked £ / Unlocked £"
+          value={`£${stats.lockedAmount.toFixed(2)} / £${stats.unlockedAmount.toFixed(2)}`}
+        />
       </div>
 
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 overflow-hidden shadow-sm">
@@ -154,7 +179,7 @@ export default function AdminReferralTable({ initialReferrals }) {
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StatusPill status={r.status} />
                     <span className="text-xs text-gray-500 dark:text-white/50">
-                      £{Number(r.reward_amount_gbp).toFixed(2)}
+                      £{Number(r.reward_amount_gbp || 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -183,11 +208,11 @@ export default function AdminReferralTable({ initialReferrals }) {
                   </div>
 
                   <div className="mt-3 space-y-1 text-xs text-gray-500 dark:text-white/50">
-                    <p>Created: {new Date(r.created_at).toLocaleString()}</p>
-                    <p>Expires: {new Date(r.expires_at).toLocaleString()}</p>
-                    {r.unlocked_at ? <p>Unlocked: {new Date(r.unlocked_at).toLocaleString()}</p> : null}
-                    {r.expired_at ? <p>Expired: {new Date(r.expired_at).toLocaleString()}</p> : null}
-                    {r.voided_at ? <p>Voided: {new Date(r.voided_at).toLocaleString()}</p> : null}
+                    <p>Created: {formatDate(r.created_at)}</p>
+                    <p>Expires: {formatDate(r.expires_at)}</p>
+                    {r.unlocked_at ? <p>Unlocked: {formatDate(r.unlocked_at)}</p> : null}
+                    {r.expired_at ? <p>Expired: {formatDate(r.expired_at)}</p> : null}
+                    {r.voided_at ? <p>Voided: {formatDate(r.voided_at)}</p> : null}
                   </div>
                 </div>
 
@@ -207,7 +232,11 @@ export default function AdminReferralTable({ initialReferrals }) {
                 <div className="lg:col-span-2 flex items-start lg:justify-end">
                   <button
                     onClick={() => onVoid(r.id)}
-                    disabled={busyId === r.id || r.status === "voided" || r.status === "unlocked"}
+                    disabled={
+                      busyId === r.id ||
+                      r.status === "voided" ||
+                      r.status === "unlocked"
+                    }
                     className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200"
                   >
                     {r.status === "voided"

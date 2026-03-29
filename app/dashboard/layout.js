@@ -1,3 +1,4 @@
+import ActivityTracker from "@/components/ActivityTracker";
 import DashboardNavbar from "@/components/DashboardNavbar";
 
 export default function DashboardLayout({ children }) {
@@ -5,6 +6,7 @@ export default function DashboardLayout({ children }) {
         <>
             <DashboardNavbar />
             <main>
+                <ActivityTracker />
                 {children}
             </main>
         </>

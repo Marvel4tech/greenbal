@@ -1,27 +1,46 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { createClient } from "@supabase/supabase-js"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import AdminReferralTable from "@/components/AdminReferralTable"
+
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
+}
 
 export default async function AdminReferralsPage() {
   const supabase = await createServerClientWrapper()
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
-  if (!user) redirect("/login")
+  if (userError || !user) redirect("/login")
 
-  const { data: adminProfile } = await supabase
+  const { data: adminProfile, error: adminProfileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
-  if (adminProfile?.role !== "admin") redirect("/")
+  if (adminProfileError || adminProfile?.role !== "admin") {
+    redirect("/")
+  }
 
-  const { data: referrals } = await supabase
+  const adminSupabase = createAdminClient()
+
+  const { data: referrals, error: referralsError } = await adminSupabase
     .from("referrals")
     .select(`
       id,
@@ -42,11 +61,14 @@ export default async function AdminReferralsPage() {
     `)
     .order("created_at", { ascending: false })
 
+  if (referralsError) {
+    console.error("Admin referrals fetch error:", referralsError)
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10">
-      {/* Back to Dashboard Button */}
       <div className="mb-6">
-        <Link 
+        <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
         >

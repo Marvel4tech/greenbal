@@ -247,7 +247,7 @@ const page = () => {
                     type='datetime-local'
                     value={newGames.matchTime}
                     onChange={(e) => setNewGames({ ...newGames, matchTime: e.target.value })}
-                    className='border rounded-md p-2 flex-1 bg-transparent'
+                    className='border rounded-md p-2 flex-1 bg-transparent dark:text-white text-gray-900'
                 />
                 <button type='submit' className="bg-primary text-white px-4 py-2 rounded-md flex items-center justify-center 
                 gap-2 hover:opacity-90">

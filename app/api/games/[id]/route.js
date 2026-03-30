@@ -2,6 +2,7 @@ import { scoreGame } from "@/lib/scoring/scoreGame";
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { withAdminLog } from "@/lib/withAdminLog";
 import { NextResponse } from "next/server";
+import { sendNotificationToAllUsers } from "@/lib/notifications/sendNotification";
 
 // UPDATE game result / details
 export async function PATCH(request, { params }) {
@@ -32,7 +33,25 @@ export async function PATCH(request, { params }) {
           throw error;
         }
 
-        if (data.status === "finished" && data.result && allowedResults.has(data.result)) {
+        if (
+          data.status === "finished" &&
+          data.result &&
+          allowedResults.has(data.result)
+        ) {
+          try {
+            await sendNotificationToAllUsers({
+              type: "game_finished",
+              title: "Game result updated",
+              message: `${data.home_team} vs ${data.away_team} has been completed and scored.`,
+              link: "/profile/play",
+            });
+          } catch (notificationError) {
+            console.error(
+              "Game finished notification error:",
+              notificationError
+            );
+          }
+
           const scoring = await scoreGame(id);
 
           return NextResponse.json({
@@ -40,6 +59,17 @@ export async function PATCH(request, { params }) {
             data,
             scoring,
           });
+        }
+
+        try {
+          await sendNotificationToAllUsers({
+            type: "game_updated",
+            title: "Game updated",
+            message: `${data.home_team} vs ${data.away_team} has been updated.`,
+            link: "/profile/play",
+          });
+        } catch (notificationError) {
+          console.error("Game update notification error:", notificationError);
         }
 
         return NextResponse.json({
@@ -62,10 +92,17 @@ export async function PATCH(request, { params }) {
     );
   } catch (error) {
     const status =
-      error.message === "Unauthorized" ? 401 : error.message === "Forbidden" ? 403 : 500;
+      error.message === "Unauthorized"
+        ? 401
+        : error.message === "Forbidden"
+          ? 403
+          : 500;
 
     return NextResponse.json(
-      { success: false, message: `Game updated, but scoring failed: ${error.message}` },
+      {
+        success: false,
+        message: `Game updated, but scoring failed: ${error.message}`,
+      },
       { status }
     );
   }
@@ -89,10 +126,7 @@ export async function DELETE(request, { params }) {
           throw new Error(fetchError?.message || "Game not found");
         }
 
-        const { error } = await supabaseAdmin
-          .from("games")
-          .delete()
-          .eq("id", id);
+        const { error } = await supabaseAdmin.from("games").delete().eq("id", id);
 
         if (error) {
           throw error;
@@ -115,7 +149,11 @@ export async function DELETE(request, { params }) {
     );
   } catch (error) {
     const status =
-      error.message === "Unauthorized" ? 401 : error.message === "Forbidden" ? 403 : 500;
+      error.message === "Unauthorized"
+        ? 401
+        : error.message === "Forbidden"
+          ? 403
+          : 500;
 
     console.error("Error deleting game:", error.message);
 

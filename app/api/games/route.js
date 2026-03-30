@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { withAdminLog } from "@/lib/withAdminLog";
 import { NextResponse } from "next/server";
+import { sendNotificationToAllUsers } from "@/lib/notifications/sendNotification";
 
 const TZ = "Europe/London";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -139,6 +140,17 @@ export async function POST(request) {
         }
 
         try {
+          await sendNotificationToAllUsers({
+            type: "new_game",
+            title: "New game posted",
+            message: `${homeTeam} vs ${awayTeam} is now available for predictions.`,
+            link: "/profile/play",
+          });
+        } catch (notificationError) {
+          console.error("Database notification error:", notificationError);
+        }
+
+        try {
           const pushRes = await fetch(PUSH_FUNCTION_URL, {
             method: "POST",
             headers: {
@@ -156,7 +168,10 @@ export async function POST(request) {
           const pushJson = await pushRes.json().catch(() => null);
 
           if (!pushRes.ok) {
-            console.error("Push notification failed:", pushJson || pushRes.statusText);
+            console.error(
+              "Push notification failed:",
+              pushJson || pushRes.statusText
+            );
           }
         } catch (pushError) {
           console.error("Push notification error:", pushError);
@@ -178,7 +193,11 @@ export async function POST(request) {
     );
   } catch (err) {
     const status =
-      err.message === "Unauthorized" ? 401 : err.message === "Forbidden" ? 403 : 500;
+      err.message === "Unauthorized"
+        ? 401
+        : err.message === "Forbidden"
+          ? 403
+          : 500;
 
     return NextResponse.json({ error: err.message }, { status });
   }

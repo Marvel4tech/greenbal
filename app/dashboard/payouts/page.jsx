@@ -1,65 +1,7 @@
-/* import { redirect } from "next/navigation"
-import { createServerClientWrapper } from "@/lib/supabase/server"
-import AdminWalletPayoutTable from "@/components/AdminWalletPayoutTable"
-import AdminWeeklySettlementButton from "@/components/AdminWeeklySettlementButton"
-
-export default async function AdminPayoutsPage() {
-  const supabase = await createServerClientWrapper()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect("/login")
-
-  const { data: adminProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  if (adminProfile?.role !== "admin") redirect("/")
-
-  const { data: availableTxs } = await supabase
-    .from("wallet_transactions")
-    .select(`
-      id,
-      user_id,
-      amount_gbp,
-      type,
-      status,
-      created_at,
-      week_start,
-      week_end,
-      payout_batch_id,
-      profiles:profiles(username)
-    `)
-    .eq("status", "available")
-    .is("payout_batch_id", null)
-    .order("created_at", { ascending: false })
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          Admin Wallet Payouts
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-white/70 max-w-3xl">
-          Pay users from their available wallet balance. One payout can cover weekly rewards, referral bonuses, and future bonus types.
-        </p>
-      </div>
-
-      <AdminWeeklySettlementButton />
-
-      <AdminWalletPayoutTable initialTxs={availableTxs || []} />
-    </div>
-  )
-} */
-
 import { redirect } from "next/navigation"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
-import AdminWalletPayoutTable from "@/components/AdminWalletPayoutTable"
+import AdminWalletPayoutsConsole from "@/components/AdminWalletPayoutsConsole"
 import AdminWeeklySettlementButton from "@/components/AdminWeeklySettlementButton"
 
 async function getUsernamesMap(userIds = []) {
@@ -100,7 +42,24 @@ export default async function AdminPayoutsPage() {
 
   if (adminProfileError || adminProfile?.role !== "admin") redirect("/")
 
-  const { data: availableTxsBase, error: txError } = await supabaseAdmin
+  const { data: pendingTxsBase } = await supabaseAdmin
+    .from("wallet_transactions")
+    .select(`
+      id,
+      user_id,
+      amount_gbp,
+      type,
+      status,
+      created_at,
+      week_start,
+      week_end,
+      payout_batch_id
+    `)
+    .eq("status", "pending")
+    .eq("type", "weekly_top5_reward")
+    .order("created_at", { ascending: false })
+
+  const { data: availableTxsBase } = await supabaseAdmin
     .from("wallet_transactions")
     .select(`
       id,
@@ -117,19 +76,78 @@ export default async function AdminPayoutsPage() {
     .is("payout_batch_id", null)
     .order("created_at", { ascending: false })
 
-  if (txError) {
-    console.error("admin payouts fetch error:", txError)
-  }
+  const { data: payoutBatchesBase } = await supabaseAdmin
+    .from("payout_batches")
+    .select(`
+      id,
+      user_id,
+      total_amount_gbp,
+      receipt_path,
+      paid_at,
+      created_at
+    `)
+    .order("paid_at", { ascending: false })
 
-  const usernameMap = await getUsernamesMap(
-    (availableTxsBase || []).map((tx) => tx.user_id)
-  )
+  const { data: paidTxsBase } = await supabaseAdmin
+    .from("wallet_transactions")
+    .select(`
+      id,
+      user_id,
+      payout_batch_id,
+      type,
+      amount_gbp,
+      week_start,
+      week_end,
+      paid_at
+    `)
+    .eq("status", "paid")
+    .not("payout_batch_id", "is", null)
+    .order("paid_at", { ascending: false })
+
+  const weekRows = [
+    ...(pendingTxsBase || []),
+    ...(availableTxsBase || []),
+    ...(paidTxsBase || []),
+  ]
+    .map((tx) => tx.week_start)
+    .filter(Boolean)
+
+  const weekOptions = [...new Set(weekRows)].sort((a, b) => (a < b ? 1 : -1))
+
+  const usernameMap = await getUsernamesMap([
+    ...(pendingTxsBase || []).map((tx) => tx.user_id),
+    ...(availableTxsBase || []).map((tx) => tx.user_id),
+    ...(payoutBatchesBase || []).map((b) => b.user_id),
+    ...(paidTxsBase || []).map((tx) => tx.user_id),
+  ])
+
+  const pendingTxs = (pendingTxsBase || []).map((tx) => ({
+    ...tx,
+    profiles: {
+      username: usernameMap[tx.user_id] || null,
+    },
+  }))
 
   const availableTxs = (availableTxsBase || []).map((tx) => ({
     ...tx,
     profiles: {
       username: usernameMap[tx.user_id] || null,
     },
+  }))
+
+  const paidTxsGrouped = (paidTxsBase || []).reduce((acc, tx) => {
+    const key = tx.payout_batch_id
+    if (!acc[key]) acc[key] = []
+    acc[key].push(tx)
+    return acc
+  }, {})
+
+  const payoutBatches = (payoutBatchesBase || []).map((batch) => ({
+    ...batch,
+    profiles: {
+      username: usernameMap[batch.user_id] || null,
+    },
+    txs: paidTxsGrouped[batch.id] || [],
   }))
 
   return (
@@ -139,13 +157,18 @@ export default async function AdminPayoutsPage() {
           Admin Wallet Payouts
         </h1>
         <p className="mt-2 text-gray-600 dark:text-white/70 max-w-3xl">
-          Pay users from their available wallet balance. One payout can cover weekly rewards, referral bonuses, and future bonus types.
+          Approve weekly rewards, pay available wallet balances, and review paid payout history.
         </p>
       </div>
 
       <AdminWeeklySettlementButton />
 
-      <AdminWalletPayoutTable initialTxs={availableTxs} />
+      <AdminWalletPayoutsConsole
+        pendingTxs={pendingTxs}
+        availableTxs={availableTxs}
+        payoutBatches={payoutBatches}
+        weekOptions={weekOptions}
+      />
     </div>
   )
 }

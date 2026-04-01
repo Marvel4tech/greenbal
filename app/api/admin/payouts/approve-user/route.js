@@ -25,22 +25,11 @@ export async function POST(req) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 })
     }
 
-    const formData = await req.formData()
-    const userId = formData.get("userId")
-    const receipt = formData.get("receipt")
+    const body = await req.json()
+    const userId = body?.userId
 
-    if (!userId || !receipt) {
-      return NextResponse.json(
-        { error: "Missing user or receipt" },
-        { status: 400 }
-      )
-    }
-
-    if (typeof receipt === "string") {
-      return NextResponse.json(
-        { error: "Invalid receipt upload" },
-        { status: 400 }
-      )
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 })
     }
 
     const adminDb = createClient(
@@ -56,10 +45,10 @@ export async function POST(req) {
 
     const { data: txs, error: txsError } = await adminDb
       .from("wallet_transactions")
-      .select("id, user_id, amount_gbp")
+      .select("id, amount_gbp")
       .eq("user_id", userId)
-      .eq("status", "available")
-      .is("payout_batch_id", null)
+      .eq("status", "pending")
+      .eq("type", "weekly_top5_reward")
 
     if (txsError) {
       return NextResponse.json({ error: txsError.message }, { status: 500 })
@@ -67,7 +56,7 @@ export async function POST(req) {
 
     if (!txs?.length) {
       return NextResponse.json(
-        { error: "No available transactions to pay" },
+        { error: "No pending weekly rewards to approve" },
         { status: 400 }
       )
     }
@@ -77,51 +66,12 @@ export async function POST(req) {
       0
     )
 
-    const ext = receipt.name?.split(".").pop()?.toLowerCase() || "pdf"
-    const safeExt = ["jpg", "jpeg", "png", "webp", "pdf"].includes(ext) ? ext : "pdf"
-    const filePath = `wallet-payouts/${userId}/batch-${Date.now()}.${safeExt}`
-
-    const bytes = await receipt.arrayBuffer()
-
-    const { error: uploadError } = await adminDb.storage
-      .from("receipts")
-      .upload(filePath, bytes, {
-        upsert: true,
-        contentType: receipt.type || "application/octet-stream",
-      })
-
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
-    }
-
-    const now = new Date().toISOString()
-
-    const { data: batch, error: batchError } = await adminDb
-      .from("payout_batches")
-      .insert({
-        user_id: userId,
-        total_amount_gbp: totalAmount,
-        receipt_path: filePath,
-        paid_at: now,
-        paid_by: user.id,
-        status: "paid",
-      })
-      .select()
-      .single()
-
-    if (batchError) {
-      return NextResponse.json({ error: batchError.message }, { status: 500 })
-    }
-
     const txIds = txs.map((tx) => tx.id)
 
     const { error: txUpdateError } = await adminDb
       .from("wallet_transactions")
       .update({
-        status: "paid",
-        paid_at: now,
-        paid_by: user.id,
-        payout_batch_id: batch.id,
+        status: "available",
       })
       .in("id", txIds)
 
@@ -131,7 +81,7 @@ export async function POST(req) {
 
     const { data: wallet, error: walletError } = await adminDb
       .from("wallets")
-      .select("user_id, available_balance_gbp")
+      .select("user_id, available_balance_gbp, pending_balance_gbp")
       .eq("user_id", userId)
       .single()
 
@@ -139,15 +89,19 @@ export async function POST(req) {
       return NextResponse.json({ error: walletError.message }, { status: 500 })
     }
 
-    const newAvailable = Math.max(
+    const newAvailable =
+      Number(wallet.available_balance_gbp || 0) + Number(totalAmount)
+
+    const newPending = Math.max(
       0,
-      Number(wallet.available_balance_gbp || 0) - Number(totalAmount || 0)
+      Number(wallet.pending_balance_gbp || 0) - Number(totalAmount)
     )
 
     const { error: walletUpdateError } = await adminDb
       .from("wallets")
       .update({
         available_balance_gbp: newAvailable,
+        pending_balance_gbp: newPending,
       })
       .eq("user_id", userId)
 
@@ -157,8 +111,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      batchId: batch.id,
-      paidTransactionIds: txIds,
+      approvedTransactionIds: txIds,
     })
   } catch (error) {
     return NextResponse.json(

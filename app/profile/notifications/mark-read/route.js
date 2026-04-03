@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createServerClientWrapper } from "@/lib/supabase/server";
 
 export async function POST(request) {
@@ -23,5 +24,8 @@ export async function POST(request) {
     console.error("Failed to mark notifications as read:", error.message);
   }
 
-  return NextResponse.redirect(new URL("/profile/notifications", request.url));
+  revalidatePath("/profile", "layout");
+  revalidatePath("/profile/notifications");
+
+  return NextResponse.json({ success: true });
 }

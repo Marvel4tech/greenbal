@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createServerClientWrapper } from "@/lib/supabase/server";
 
 export async function GET(request, { params }) {
@@ -29,11 +30,18 @@ export async function GET(request, { params }) {
   }
 
   if (!notification.is_read) {
-    await supabase
+    const { error: updateError } = await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("id", notification.id)
       .eq("user_id", user.id);
+
+    if (updateError) {
+      console.error("Failed to mark notification as read:", updateError.message);
+    }
+
+    revalidatePath("/profile", "layout");
+    revalidatePath("/profile/notifications");
   }
 
   const target = notification.link || "/profile/notifications";

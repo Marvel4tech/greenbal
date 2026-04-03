@@ -1,6 +1,7 @@
 'use client'
 
 import SignOutButton from '@/components/SignOutButton'
+import { Speaker } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useMemo, useState } from 'react'
 import { FaChartBar, FaCog, FaFutbol, FaInfoCircle, FaMoneyBillWave, FaNewspaper, FaTools, FaTrophy, FaUsers, FaShareAlt } from 'react-icons/fa'
@@ -16,6 +17,7 @@ const adminCards = [
   { title: 'Settings', href: '/dashboard/settings', icon: <FaCog />, color: 'bg-gray-100 dark:bg-gray-900/30', desc: 'Manage app configuration.' },
   { title: 'System Tools', href: '/dashboard/tools', icon: <FaTools />, color: 'bg-red-100 dark:bg-red-900/30', desc: 'Backup, logs, maintenance.' },
   { title: 'Payouts', href: '/dashboard/payouts', icon: <FaMoneyBillWave />, color: 'bg-emerald-100 dark:bg-emerald-900/30', desc: 'Manage weekly winner payouts.' },
+  { title: 'Announcements', href: '/dashboard/announcement', icon: <Speaker />, color: 'bg-purple-100 dark:bg-purple-900/30', desc: 'Create and manage announcements.' },
 ]
 
 const formatNum = (n) => new Intl.NumberFormat().format(Number(n ?? 0))

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 import AdminWalletPayoutsConsole from "@/components/AdminWalletPayoutsConsole"
 import AdminWeeklySettlementButton from "@/components/AdminWeeklySettlementButton"
+import { ArrowLeft } from "lucide-react"
 
 async function getUsernamesMap(userIds = []) {
   const ids = [...new Set(userIds.filter(Boolean))]
@@ -152,6 +154,17 @@ export default async function AdminPayoutsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10 space-y-6">
+      {/* Back Button */}
+      <div className="mb-2">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
+
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
           Admin Wallet Payouts

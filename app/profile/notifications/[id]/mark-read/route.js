@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClientWrapper } from "@/lib/supabase/server";
 
-export async function POST(request) {
+export async function POST(request, { params }) {
   const supabase = await createServerClientWrapper();
 
   const {
@@ -13,14 +13,18 @@ export async function POST(request) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  const { id } = await params;
+
   const { error } = await supabase
     .from("notifications")
     .update({ is_read: true })
+    .eq("id", id)
     .eq("user_id", user.id)
+    .eq("type", "admin_announcement")
     .eq("is_read", false);
 
   if (error) {
-    console.error("Failed to mark notifications as read:", error.message);
+    console.error("Failed to mark announcement as read:", error.message);
   }
 
   return NextResponse.redirect(new URL("/profile/notifications", request.url));

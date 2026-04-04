@@ -19,10 +19,9 @@ const images = [
 ]
 
 const previewShots = [
-  { src: "/images/preview-leaderboard.jpeg", label: "Weekly Leaderboard" },
+  { src: "/images/preview-leaderboard.png", label: "Weekly Leaderboard" },
   { src: "/images/preview-play.png", label: "Predict Today’s Games" },
   { src: "/images/preview-news.png", label: "News + Updates" },
-  { src: "/images/preview-assistance.png", label: "Your Assistance" },
   { src: "/images/preview-dashboard.png", label: "Player Dashboard" },
 ]
 

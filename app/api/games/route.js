@@ -73,6 +73,50 @@ function todayYMDInTZ(timeZone) {
 
   return `${y}-${m}-${d}`;
 }
+
+// Converts a London local datetime like "2026-04-04T12:45"
+// into the correct UTC ISO string for storage.
+function londonLocalDateTimeToUtcIso(localDateTime) {
+  const match = String(localDateTime).match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+  );
+
+  if (!match) {
+    throw new Error("Invalid matchTime format. Use YYYY-MM-DDTHH:mm");
+  }
+
+  const [, y, m, d, hh, mm] = match.map((v, i) => (i === 0 ? v : Number(v)));
+
+  let guessUtcMs = Date.UTC(y, m - 1, d, hh, mm, 0);
+
+  let offset1 = tzOffsetMinutesAt(guessUtcMs, TZ);
+  let utcMs = guessUtcMs - offset1 * 60_000;
+
+  let offset2 = tzOffsetMinutesAt(utcMs, TZ);
+  if (offset2 !== offset1) {
+    utcMs = guessUtcMs - offset2 * 60_000;
+  }
+
+  return new Date(utcMs).toISOString();
+}
+
+// Accept either:
+// 1. local datetime from <input type="datetime-local"> => "2026-04-04T12:45"
+// 2. already-UTC ISO => "2026-04-04T11:45:00.000Z"
+function normalizeMatchTime(matchTime) {
+  const value = String(matchTime).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return londonLocalDateTimeToUtcIso(value);
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  throw new Error("Invalid matchTime value");
+}
 // functions end
 
 export async function GET(request) {
@@ -119,6 +163,8 @@ export async function POST(request) {
       );
     }
 
+    const normalizedMatchTime = normalizeMatchTime(matchTime);
+
     return await withAdminLog(
       request,
       async ({ admin }) => {
@@ -128,7 +174,7 @@ export async function POST(request) {
             {
               home_team: homeTeam,
               away_team: awayTeam,
-              match_time: matchTime,
+              match_time: normalizedMatchTime,
               status: "upcoming",
             },
           ])
@@ -187,7 +233,7 @@ export async function POST(request) {
         metadata: {
           homeTeam,
           awayTeam,
-          matchTime,
+          matchTime: normalizedMatchTime,
         },
       }
     );

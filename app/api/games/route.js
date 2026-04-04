@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { withAdminLog } from "@/lib/withAdminLog";
 import { NextResponse } from "next/server";
 import { sendNotificationToAllUsers } from "@/lib/notifications/sendNotification";
+import { sendWebPush } from "@/lib/sendWebPush";
 
 const TZ = "Europe/London";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -167,7 +168,7 @@ export async function POST(request) {
 
     return await withAdminLog(
       request,
-      async ({ admin }) => {
+      async () => {
         const { data, error } = await supabaseAdmin
           .from("games")
           .insert([
@@ -185,6 +186,7 @@ export async function POST(request) {
           throw error;
         }
 
+        // 1) In-app notification
         try {
           await sendNotificationToAllUsers({
             type: "new_game",
@@ -196,6 +198,7 @@ export async function POST(request) {
           console.error("Database notification error:", notificationError);
         }
 
+        // 2) FCM push for Android/Desktop
         try {
           const pushRes = await fetch(PUSH_FUNCTION_URL, {
             method: "POST",
@@ -221,6 +224,56 @@ export async function POST(request) {
           }
         } catch (pushError) {
           console.error("Push notification error:", pushError);
+        }
+
+        // 3) Web Push for iPhone/iPad Home Screen
+        try {
+          const { data: webPushSubscriptions, error: subError } = await supabaseAdmin
+            .from("push_subscriptions")
+            .select("endpoint, p256dh, auth")
+            .not("endpoint", "is", null)
+            .not("p256dh", "is", null)
+            .not("auth", "is", null);
+
+          if (subError) {
+            console.error("Web push subscription fetch error:", subError);
+          } else {
+            for (const sub of webPushSubscriptions || []) {
+              try {
+                await sendWebPush(
+                  {
+                    endpoint: sub.endpoint,
+                    keys: {
+                      p256dh: sub.p256dh,
+                      auth: sub.auth,
+                    },
+                  },
+                  {
+                    title: "New game posted",
+                    body: `${homeTeam} vs ${awayTeam} is now live for predictions.`,
+                    icon: "/icon-192.png",
+                    badge: "/icon-192.png",
+                    data: {
+                      link: "/profile/play",
+                    },
+                  }
+                );
+              } catch (error) {
+                const statusCode = error?.statusCode;
+
+                if (statusCode === 404 || statusCode === 410) {
+                  await supabaseAdmin
+                    .from("push_subscriptions")
+                    .delete()
+                    .eq("endpoint", sub.endpoint);
+                } else {
+                  console.error("Web push send failed:", error);
+                }
+              }
+            }
+          }
+        } catch (webPushError) {
+          console.error("Web push notification error:", webPushError);
         }
 
         return NextResponse.json(data);

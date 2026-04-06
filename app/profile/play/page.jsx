@@ -1,45 +1,44 @@
-'use client'
+"use client"
 
-import React, { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from "react"
+import { CalendarDays, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
-const TZ = 'Europe/London'
+const TZ = "Europe/London"
 
 // YYYY-MM-DD for today in UK time
 function todayYMD() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(new Date())
 
-  const y = parts.find((p) => p.type === 'year')?.value
-  const m = parts.find((p) => p.type === 'month')?.value
-  const d = parts.find((p) => p.type === 'day')?.value
+  const y = parts.find((p) => p.type === "year")?.value
+  const m = parts.find((p) => p.type === "month")?.value
+  const d = parts.find((p) => p.type === "day")?.value
   return `${y}-${m}-${d}`
 }
 
 function addDaysYMD(ymd, days) {
-  const [y, m, d] = ymd.split('-').map(Number)
+  const [y, m, d] = ymd.split("-").map(Number)
   const dt = new Date(Date.UTC(y, m - 1, d))
   dt.setUTCDate(dt.getUTCDate() + days)
   const yy = dt.getUTCFullYear()
-  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(dt.getUTCDate()).padStart(2, '0')
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0")
+  const dd = String(dt.getUTCDate()).padStart(2, "0")
   return `${yy}-${mm}-${dd}`
 }
 
 function prettyDate(ymd) {
-  const [y, m, d] = ymd.split('-').map(Number)
+  const [y, m, d] = ymd.split("-").map(Number)
   const dt = new Date(Date.UTC(y, m - 1, d))
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(dt)
 }
 
@@ -47,19 +46,22 @@ const Page = () => {
   const [games, setGames] = useState([])
   const [loadingGames, setLoadingGames] = useState(true)
   const [loadingPreds, setLoadingPreds] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   const [predictions, setPredictions] = useState({})
   const [savingGameId, setSavingGameId] = useState(null)
   const [now, setNow] = useState(new Date())
 
-  // Date browsing (defaults to today in UK)
+  // Date browsing
   const [selectedDate, setSelectedDate] = useState(() => todayYMD())
   const today = useMemo(() => todayYMD(), [])
-  const isToday = selectedDate === today
-  const isPast = selectedDate < today
-  const isFuture = selectedDate > today
+  const tomorrow = useMemo(() => addDaysYMD(today, 1), [today])
 
-  // Update current time every second (for live countdowns)
+  const isToday = selectedDate === today
+  const isTomorrow = selectedDate === tomorrow
+  const isPast = selectedDate < today
+  const canPredictOnSelectedDate = isToday || isTomorrow
+
+  // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
@@ -70,13 +72,17 @@ const Page = () => {
     const fetchGames = async () => {
       try {
         setLoadingGames(true)
-        setError('')
+        setError("")
 
-        const url = isToday ? '/api/games' : `/api/games?date=${selectedDate}`
-        const res = await fetch(url, { cache: 'no-store' })
+        const url =
+          selectedDate === today
+            ? "/api/games"
+            : `/api/games?date=${selectedDate}`
+
+        const res = await fetch(url, { cache: "no-store" })
         const data = await res.json()
 
-        if (!res.ok) throw new Error(data?.error || 'Failed to fetch games')
+        if (!res.ok) throw new Error(data?.error || "Failed to fetch games")
 
         const normalised = (data || []).map((g) => ({
           id: g.id,
@@ -97,27 +103,28 @@ const Page = () => {
     }
 
     fetchGames()
-  }, [selectedDate, isToday])
+  }, [selectedDate, today])
 
-  // Fetch user predictions for games on this page (so refresh stays locked)
+  // Fetch user predictions for games on this page
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
         setLoadingPreds(true)
-        setError('')
+        setError("")
 
-        // if no games, skip
         if (!games.length) {
           setPredictions({})
           return
         }
 
-        // ask only predictions for these games
-        const ids = games.map((g) => g.id).join(',')
-        const res = await fetch(`/api/predictions?game_ids=${encodeURIComponent(ids)}`, { cache: 'no-store' })
+        const ids = games.map((g) => g.id).join(",")
+        const res = await fetch(
+          `/api/predictions?game_ids=${encodeURIComponent(ids)}`,
+          { cache: "no-store" }
+        )
         const data = await res.json()
 
-        if (!res.ok) throw new Error(data?.error || 'Failed to fetch predictions')
+        if (!res.ok) throw new Error(data?.error || "Failed to fetch predictions")
 
         const map = {}
         for (const p of data || []) {
@@ -134,10 +141,9 @@ const Page = () => {
     fetchPredictions()
   }, [games])
 
-  // Helper function: format countdown text
   const formatCountdown = (startTime) => {
     const diff = new Date(startTime) - now
-    if (diff <= 0) return 'Match Started 🔒'
+    if (diff <= 0) return "Match Started 🔒"
 
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
@@ -146,21 +152,20 @@ const Page = () => {
     return `${hours}h ${minutes}m ${seconds}s`
   }
 
-  // Save prediction immediately to DB
   const handlePrediction = async (match, predictionValue) => {
-    // Users can only predict on TODAY (and before kickoff)
-    if (!isToday) return
+    if (!canPredictOnSelectedDate) return
 
     const hasStarted = new Date(match.startTime) <= now
     const isLocked = Boolean(predictions[match.id])
+
     if (hasStarted || isLocked) return
 
     try {
       setSavingGameId(match.id)
 
-      const res = await fetch('/api/predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           game_id: match.id,
           prediction: predictionValue,
@@ -168,7 +173,7 @@ const Page = () => {
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Failed to save prediction')
+      if (!res.ok) throw new Error(data?.error || "Failed to save prediction")
 
       setPredictions((prev) => ({
         ...prev,
@@ -184,24 +189,22 @@ const Page = () => {
   const visibleGames = useMemo(() => games, [games])
   const loading = loadingGames || loadingPreds
 
-  // Date controls
   const goPrevDay = () => setSelectedDate((d) => addDaysYMD(d, -1))
   const goToday = () => setSelectedDate(today)
   const goNextDay = () => {
-    // allow moving forward until today (no future browsing)
-    if (isToday) return
+    if (selectedDate === tomorrow) return
+
     setSelectedDate((d) => {
       const next = addDaysYMD(d, 1)
-      return next > today ? today : next
+      return next > tomorrow ? tomorrow : next
     })
   }
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      {/* Desktop back button - only visible on desktop */}
       <div className="hidden md:block mb-6">
-        <Link 
-          href="/profile" 
+        <Link
+          href="/profile"
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -209,12 +212,16 @@ const Page = () => {
         </Link>
       </div>
 
-      {/* Header + date nav */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">
-            {isToday ? "Today's Predictions" : isPast ? "Previous Games" : "Upcoming Games"}
+            {isToday
+              ? "Today's Predictions"
+              : isTomorrow
+              ? "Tomorrow's Predictions"
+              : "Previous Games"}
           </h1>
+
           <p className="text-sm text-gray-500 flex items-center gap-2 mt-1">
             <CalendarDays className="w-4 h-4" />
             <span className="font-medium">{prettyDate(selectedDate)}</span> (UK)
@@ -239,13 +246,19 @@ const Page = () => {
 
           <button
             onClick={goNextDay}
-            disabled={isToday}
+            disabled={selectedDate === tomorrow}
             className="flex-1 sm:flex-none px-3 py-2 rounded-md border bg-white dark:bg-black/40 hover:bg-gray-50 dark:hover:bg-white/10 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {isTomorrow && (
+        <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-200">
+          You can predict tomorrow’s games early. Predictions will still lock automatically once each match starts.
+        </div>
+      )}
 
       {loading && <p className="text-center text-gray-500">Loading games...</p>}
       {!loading && error && <p className="text-center text-red-500">{error}</p>}
@@ -263,8 +276,7 @@ const Page = () => {
           const isLocked = Boolean(userPrediction)
           const isSavingThis = savingGameId === match.id
 
-          // lock prediction if not today (past or future)
-          const lockedByDate = !isToday
+          const lockedByDate = !canPredictOnSelectedDate
           const disabled = lockedByDate || hasStarted || isLocked || isSavingThis
 
           return (
@@ -272,11 +284,10 @@ const Page = () => {
               key={match.id}
               className={`border rounded-xl p-4 shadow-md transition ${
                 hasStarted || lockedByDate
-                  ? 'bg-gray-200 dark:bg-gray-800 opacity-70'
-                  : 'bg-white dark:bg-black/70'
+                  ? "bg-gray-200 dark:bg-gray-800 opacity-70"
+                  : "bg-white dark:bg-black/70"
               }`}
             >
-              {/* Match Info */}
               <div className="flex justify-between items-center mb-2 gap-3">
                 <h2 className="font-semibold text-lg">
                   {match.home} <span className="text-green-500">vs</span> {match.away}
@@ -285,54 +296,52 @@ const Page = () => {
                 <span
                   className={`text-xs font-medium whitespace-nowrap ${
                     hasStarted || lockedByDate
-                      ? 'text-gray-500'
+                      ? "text-gray-500"
                       : isLocked
-                      ? 'text-blue-500'
-                      : 'text-green-500'
+                      ? "text-blue-500"
+                      : "text-green-500"
                   }`}
                 >
                   {lockedByDate
-                    ? 'Read-only 🔒'
+                    ? "Read-only 🔒"
                     : hasStarted
-                    ? 'Match Started 🔒'
+                    ? "Match Started 🔒"
                     : isLocked
-                    ? 'Prediction Locked ✅'
-                    : 'Open ⏳'}
+                    ? "Prediction Locked ✅"
+                    : "Open ⏳"}
                 </span>
               </div>
 
-              {/* Live Countdown (only today & not started) */}
-              {isToday && !hasStarted && (
+              {canPredictOnSelectedDate && !hasStarted && (
                 <p className="text-xs text-gray-500 mb-3">
                   Starts in: <span className="font-semibold">{formatCountdown(match.startTime)}</span>
                 </p>
               )}
 
-              {/* Prediction Buttons */}
               <div className="flex justify-between gap-2">
                 <button
                   disabled={disabled}
-                  onClick={() => handlePrediction(match, 'homeWin')}
+                  onClick={() => handlePrediction(match, "homeWin")}
                   className={`flex-1 py-2 rounded-lg border transition text-sm font-medium ${
-                    userPrediction === 'homeWin'
-                      ? 'bg-green-500 text-white border-green-500'
+                    userPrediction === "homeWin"
+                      ? "bg-green-500 text-white border-green-500"
                       : disabled
-                      ? 'bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed'
-                      : 'bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900'
+                      ? "bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed"
+                      : "bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900"
                   }`}
                 >
-                  {isSavingThis ? 'Saving...' : `${match.home} Win`}
+                  {isSavingThis ? "Saving..." : `${match.home} Win`}
                 </button>
 
                 <button
                   disabled={disabled}
-                  onClick={() => handlePrediction(match, 'draw')}
+                  onClick={() => handlePrediction(match, "draw")}
                   className={`flex-1 py-2 rounded-lg border transition text-sm font-medium ${
-                    userPrediction === 'draw'
-                      ? 'bg-green-500 text-white border-green-500'
+                    userPrediction === "draw"
+                      ? "bg-green-500 text-white border-green-500"
                       : disabled
-                      ? 'bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed'
-                      : 'bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900'
+                      ? "bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed"
+                      : "bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900"
                   }`}
                 >
                   Draw
@@ -340,42 +349,40 @@ const Page = () => {
 
                 <button
                   disabled={disabled}
-                  onClick={() => handlePrediction(match, 'awayWin')}
+                  onClick={() => handlePrediction(match, "awayWin")}
                   className={`flex-1 py-2 rounded-lg border transition text-sm font-medium ${
-                    userPrediction === 'awayWin'
-                      ? 'bg-green-500 text-white border-green-500'
+                    userPrediction === "awayWin"
+                      ? "bg-green-500 text-white border-green-500"
                       : disabled
-                      ? 'bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed'
-                      : 'bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900'
+                      ? "bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed"
+                      : "bg-white dark:bg-gray-900 hover:bg-green-100 dark:hover:bg-green-900"
                   }`}
                 >
                   {match.away} Win
                 </button>
               </div>
 
-              {/* Show what user picked */}
               {isLocked && (
                 <p className="mt-3 text-xs text-gray-500">
-                  Your prediction:{' '}
+                  Your prediction:{" "}
                   <span className="font-semibold">
-                    {userPrediction === 'homeWin'
+                    {userPrediction === "homeWin"
                       ? `${match.home} Win`
-                      : userPrediction === 'draw'
-                      ? 'Draw'
+                      : userPrediction === "draw"
+                      ? "Draw"
                       : `${match.away} Win`}
                   </span>
                 </p>
               )}
 
-              {/* Show result (if finished) */}
-              {match.status === 'finished' && match.result && (
+              {match.status === "finished" && match.result && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Result:{' '}
+                  Result:{" "}
                   <span className="font-semibold">
-                    {match.result === 'homeWin'
+                    {match.result === "homeWin"
                       ? `${match.home} Win`
-                      : match.result === 'draw'
-                      ? 'Draw'
+                      : match.result === "draw"
+                      ? "Draw"
                       : `${match.away} Win`}
                   </span>
                 </p>
@@ -389,9 +396,16 @@ const Page = () => {
         <p className="text-xs text-gray-500">
           Predictions are saved instantly. Once submitted, they cannot be changed.
         </p>
-        {!isToday && (
+
+        {isPast && (
           <p className="text-xs text-gray-500 mt-2">
-            You can only predict on today’s games. Past days are read-only.
+            Past days are read-only.
+          </p>
+        )}
+
+        {(isToday || isTomorrow) && (
+          <p className="text-xs text-gray-500 mt-2">
+            You can predict today’s and tomorrow’s games until each match starts.
           </p>
         )}
       </div>

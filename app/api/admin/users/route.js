@@ -11,7 +11,10 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from("profiles")
-      .select("id, full_name, username, email, country, role, created_at", { count: "exact" })
+      .select("id, full_name, username, email, country, role, created_at", {
+        count: "exact",
+      })
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1)
 

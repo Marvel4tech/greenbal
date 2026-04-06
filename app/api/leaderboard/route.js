@@ -1,32 +1,32 @@
-import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
-import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
+import { NextResponse } from "next/server"
 
 export async function GET(request) {
   try {
-    const url = new URL(request.url);
+    const url = new URL(request.url)
 
-    const weekQuery = url.searchParams.get("week"); // "current" | null
-    let weekStart = url.searchParams.get("week_start") || null;
+    const weekQuery = url.searchParams.get("week") // "current" | null
+    let weekStart = url.searchParams.get("week_start") || null
 
     // helper to get current week_start (Tue -> Mon UTC) from RPC
     const getCurrentWeekStart = async () => {
       const { data, error } = await supabaseAdmin.rpc("week_start_tuesday", {
         ts: new Date().toISOString(),
-      });
-      if (error) throw new Error(error.message);
-      return data; // "YYYY-MM-DD"
-    };
-
-    // ✅ Mode A: /api/leaderboard?week=current -> return { week_start }
-    if (weekQuery === "current") {
-      const current = await getCurrentWeekStart();
-      return NextResponse.json({ week_start: current });
+      })
+      if (error) throw new Error(error.message)
+      return data
     }
 
-    // ✅ Mode B: /api/leaderboard?week_start=YYYY-MM-DD -> fetch that week
-    // ✅ Default: current week if not provided
+    // Mode A: /api/leaderboard?week=current -> return { week_start }
+    if (weekQuery === "current") {
+      const current = await getCurrentWeekStart()
+      return NextResponse.json({ week_start: current })
+    }
+
+    // Mode B: /api/leaderboard?week_start=YYYY-MM-DD -> fetch that week
+    // Default: current week if not provided
     if (!weekStart) {
-      weekStart = await getCurrentWeekStart();
+      weekStart = await getCurrentWeekStart()
     }
 
     const { data, error } = await supabaseAdmin
@@ -38,17 +38,22 @@ export async function GET(request) {
         correct_total,
         predictions_total,
         updated_at,
-        profiles:profiles (
+        profiles!inner (
           username,
-          email
+          email,
+          is_deleted
         )
       `)
       .eq("week_start", weekStart)
+      .eq("profiles.is_deleted", false)
       .order("points_total", { ascending: false })
-      .limit(50);
+      .order("correct_total", { ascending: false })
+      .order("predictions_total", { ascending: false })
+      .order("updated_at", { ascending: true })
+      .limit(50)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     const rows = (data || []).map((r, i) => ({
@@ -61,10 +66,10 @@ export async function GET(request) {
       correct_total: r.correct_total ?? 0,
       predictions_total: r.predictions_total ?? 0,
       updated_at: r.updated_at,
-    }));
+    }))
 
-    return NextResponse.json(rows);
+    return NextResponse.json(rows)
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }

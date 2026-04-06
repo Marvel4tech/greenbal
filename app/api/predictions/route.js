@@ -2,15 +2,21 @@ import { NextResponse } from "next/server"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 
-async function ensureNotBanned(supabase, userId) {
+async function ensureActiveUser(supabase, userId) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("is_banned")
+    .select("is_banned, is_deleted")
     .eq("id", userId)
     .single()
 
   if (error) {
     const err = new Error(error.message || "Profile not found")
+    err.status = 403
+    throw err
+  }
+
+  if (data?.is_deleted) {
+    const err = new Error("This account is no longer available.")
     err.status = 403
     throw err
   }
@@ -35,9 +41,8 @@ export async function GET(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // ✅ Ban enforcement
   try {
-    await ensureNotBanned(supabase, user.id)
+    await ensureActiveUser(supabase, user.id)
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 403 })
   }
@@ -77,9 +82,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // ✅ Ban enforcement
   try {
-    await ensureNotBanned(supabase, user.id)
+    await ensureActiveUser(supabase, user.id)
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 403 })
   }
@@ -118,6 +122,7 @@ export async function POST(request) {
   if (game.status === "finished") {
     return NextResponse.json({ error: "Game already finished" }, { status: 400 })
   }
+
   if (now >= matchTime) {
     return NextResponse.json({ error: "Predictions are closed for this game" }, { status: 400 })
   }
@@ -141,7 +146,10 @@ export async function POST(request) {
   const { data: weekStart, error: weekErr } = await supabaseAdmin.rpc("week_start_tuesday", {
     ts: game.match_time,
   })
-  if (weekErr) return NextResponse.json({ error: weekErr.message }, { status: 500 })
+
+  if (weekErr) {
+    return NextResponse.json({ error: weekErr.message }, { status: 500 })
+  }
 
   // Weekly leaderboard: increment predictions count
   const { error: weeklyErr } = await supabaseAdmin.rpc("leaderboard_weekly_apply_delta", {
@@ -151,7 +159,10 @@ export async function POST(request) {
     p_delta_correct: 0,
     p_delta_predictions: 1,
   })
-  if (weeklyErr) return NextResponse.json({ error: weeklyErr.message }, { status: 500 })
+
+  if (weeklyErr) {
+    return NextResponse.json({ error: weeklyErr.message }, { status: 500 })
+  }
 
   // Ensure leaderboard row exists
   const { error: lbUpsertErr } = await supabaseAdmin

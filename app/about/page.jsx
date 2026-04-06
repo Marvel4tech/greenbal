@@ -35,12 +35,11 @@ const steps = [
   { title: "Climb the weekly leaderboard", desc: "Top performers take weekly cash rewards." },
 ]
 
-// Optional screenshots strip (replace with your real images later)
 const previewShots = [
-  { src: "/images/preview-leaderboard.jpeg", label: "Weekly Leaderboard" },
-  { src: "/images/preview-play.png", label: "Play / Predictions" },
-  { src: "/images/preview-dashboard.png", label: "Dashboard" },
-  { src: "/images/preview-assistance.png", label: "Results + Points" },
+  { src: "/images/preview-leaderboard.png", label: "Weekly Leaderboard" },
+  { src: "/images/preview-play.png", label: "Predict Today’s Games" },
+  { src: "/images/preview-news.png", label: "News + Updates" },
+  { src: "/images/preview-dashboard.png", label: "Player Dashboard" },
 ]
 
 const Page = () => {

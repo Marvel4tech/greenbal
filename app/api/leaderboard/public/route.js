@@ -13,28 +13,42 @@ export async function GET(request) {
       const { data, error: weekErr } = await supabaseAdmin.rpc("week_start_tuesday", {
         ts: new Date().toISOString(),
       })
-      if (weekErr) return NextResponse.json({ error: weekErr.message }, { status: 500 })
+
+      if (weekErr) {
+        return NextResponse.json({ error: weekErr.message }, { status: 500 })
+      }
+
       weekStart = data
     }
 
-    // 1) Top 50
+    // 1) Top 50 excluding deleted users
     const { data: top, error: topErr } = await supabaseAdmin
       .from("leaderboard_weekly")
       .select(
         `
-          user_id,
-          week_start,
-          points_total,
-          updated_at,
-          profiles:profiles ( username )
+        user_id,
+        week_start,
+        points_total,
+        correct_total,
+        predictions_total,
+        updated_at,
+        profiles!inner (
+          username,
+          is_deleted
+        )
         `
       )
       .eq("week_start", weekStart)
+      .eq("profiles.is_deleted", false)
       .order("points_total", { ascending: false })
-      .order("updated_at", { ascending: true }) // tie-breaker
+      .order("correct_total", { ascending: false })
+      .order("predictions_total", { ascending: false })
+      .order("updated_at", { ascending: true })
       .limit(50)
 
-    if (topErr) return NextResponse.json({ error: topErr.message }, { status: 500 })
+    if (topErr) {
+      return NextResponse.json({ error: topErr.message }, { status: 500 })
+    }
 
     const rows = (top || []).map((r, i) => ({
       rank: i + 1,
@@ -42,6 +56,8 @@ export async function GET(request) {
       week_start: r.week_start,
       name: r.profiles?.username || "Unknown",
       points: r.points_total ?? 0,
+      correct_total: r.correct_total ?? 0,
+      predictions_total: r.predictions_total ?? 0,
       duration: "—",
     }))
 
@@ -50,40 +66,75 @@ export async function GET(request) {
       return NextResponse.json({ week_start: weekStart, rows, me: null })
     }
 
-    // 2) Fetch my weekly row
+    // 2) Fetch my weekly row only if user is not deleted
     const { data: myRow, error: myErr } = await supabaseAdmin
       .from("leaderboard_weekly")
       .select(
         `
         user_id,
         points_total,
+        correct_total,
+        predictions_total,
         updated_at,
-        profiles:profiles ( username )
-      `
+        profiles!inner (
+          username,
+          is_deleted
+        )
+        `
       )
       .eq("week_start", weekStart)
       .eq("user_id", userId)
+      .eq("profiles.is_deleted", false)
       .maybeSingle()
 
-    if (myErr) return NextResponse.json({ error: myErr.message }, { status: 500 })
-    if (!myRow) return NextResponse.json({ week_start: weekStart, rows, me: null })
+    if (myErr) {
+      return NextResponse.json({ error: myErr.message }, { status: 500 })
+    }
+
+    if (!myRow) {
+      return NextResponse.json({ week_start: weekStart, rows, me: null })
+    }
 
     const myPoints = myRow.points_total ?? 0
+    const myCorrect = myRow.correct_total ?? 0
+    const myPredictions = myRow.predictions_total ?? 0
 
-    // 3) Compute "my rank" even if not in top 50
-    const { count: higherCount, error: countErr } = await supabaseAdmin
+    // 3) Compute my rank excluding deleted users
+    const { data: allRanks, error: rankErr } = await supabaseAdmin
       .from("leaderboard_weekly")
-      .select("user_id", { count: "exact", head: true })
+      .select(
+        `
+        user_id,
+        points_total,
+        correct_total,
+        predictions_total,
+        updated_at,
+        profiles!inner (
+          is_deleted
+        )
+        `
+      )
       .eq("week_start", weekStart)
-      .gt("points_total", myPoints)
+      .eq("profiles.is_deleted", false)
+      .order("points_total", { ascending: false })
+      .order("correct_total", { ascending: false })
+      .order("predictions_total", { ascending: false })
+      .order("updated_at", { ascending: true })
+      .limit(5000)
 
-    if (countErr) return NextResponse.json({ error: countErr.message }, { status: 500 })
+    if (rankErr) {
+      return NextResponse.json({ error: rankErr.message }, { status: 500 })
+    }
+
+    const myIndex = (allRanks || []).findIndex((r) => r.user_id === userId)
 
     const me = {
       id: myRow.user_id,
       name: myRow.profiles?.username || "You",
       points: myPoints,
-      rank: (higherCount ?? 0) + 1,
+      correct_total: myCorrect,
+      predictions_total: myPredictions,
+      rank: myIndex >= 0 ? myIndex + 1 : null,
     }
 
     return NextResponse.json({ week_start: weekStart, rows, me })
@@ -91,4 +142,3 @@ export async function GET(request) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
-

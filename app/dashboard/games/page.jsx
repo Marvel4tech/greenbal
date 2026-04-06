@@ -50,12 +50,27 @@ function prettyDate(ymd) {
     year: "numeric",
   }).format(dt);
 }
+
+function toLocalDateTimeValue(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function normalizeTeamName(value) {
+  return String(value || "").trim().toLowerCase();
+}
 // functions ends
 
 const Page = () => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [addingGame, setAddingGame] = useState(false);
   const [newGames, setNewGames] = useState({
     homeTeam: "",
     awayTeam: "",
@@ -116,21 +131,47 @@ const Page = () => {
   const handleAddGame = async (e) => {
     e.preventDefault();
 
-    if (!newGames.homeTeam || !newGames.awayTeam || !newGames.matchTime) {
+    if (addingGame) return;
+
+    const homeTeam = newGames.homeTeam.trim();
+    const awayTeam = newGames.awayTeam.trim();
+    const matchTime = newGames.matchTime;
+
+    if (!homeTeam || !awayTeam || !matchTime) {
       alert("Please fill in all fields");
       return;
     }
 
+    if (normalizeTeamName(homeTeam) === normalizeTeamName(awayTeam)) {
+      alert("Home team and away team cannot be the same");
+      return;
+    }
+
+    const duplicateInCurrentList = games.some((g) => {
+      return (
+        normalizeTeamName(g.home_team) === normalizeTeamName(homeTeam) &&
+        normalizeTeamName(g.away_team) === normalizeTeamName(awayTeam) &&
+        new Date(g.match_time).getTime() === new Date(matchTime).getTime()
+      );
+    });
+
+    if (duplicateInCurrentList) {
+      alert("This exact game already exists");
+      return;
+    }
+
     try {
+      setAddingGame(true);
+
       const res = await fetch("/api/games", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          homeTeam: newGames.homeTeam,
-          awayTeam: newGames.awayTeam,
-          matchTime: newGames.matchTime,
+          homeTeam,
+          awayTeam,
+          matchTime,
         }),
       });
 
@@ -140,8 +181,15 @@ const Page = () => {
         throw new Error(data?.error || "Failed to add game");
       }
 
-      if (isToday) {
-        setGames((prev) => [...prev, data]);
+      const createdGameTime = data?.match_time
+        ? new Date(data.match_time).toISOString().slice(0, 10)
+        : null;
+
+      if (createdGameTime === selectedDate) {
+        setGames((prev) => {
+          const alreadyExists = prev.some((g) => g.id === data.id);
+          return alreadyExists ? prev : [...prev, data];
+        });
       }
 
       setNewGames({
@@ -151,6 +199,8 @@ const Page = () => {
       });
     } catch (err) {
       alert(`Error adding game: ${err.message}`);
+    } finally {
+      setAddingGame(false);
     }
   };
 
@@ -283,20 +333,35 @@ const Page = () => {
           className="border rounded-md p-2 flex-1 bg-transparent"
         />
 
-        <input
-          type="datetime-local"
-          value={newGames.matchTime}
-          onChange={(e) =>
-            setNewGames({ ...newGames, matchTime: e.target.value })
-          }
-          className="border rounded-md p-2 flex-1 bg-transparent dark:text-white text-gray-900"
-        />
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor="matchTime"
+            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+          >
+            Match Date & Time
+          </label>
+          <input
+            id="matchTime"
+            type="datetime-local"
+            value={newGames.matchTime}
+            min={toLocalDateTimeValue()}
+            onChange={(e) =>
+              setNewGames({ ...newGames, matchTime: e.target.value })
+            }
+            className="border rounded-md p-2 w-full bg-transparent dark:text-white text-gray-900"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Select the match date and kickoff time.
+          </p>
+        </div>
 
         <button
           type="submit"
-          className="bg-primary text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 hover:opacity-90"
+          disabled={addingGame}
+          className="bg-primary text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <PlusCircle size={18} /> Add Game
+          <PlusCircle size={18} />
+          {addingGame ? "Adding..." : "Add Game"}
         </button>
       </form>
 
@@ -347,17 +412,15 @@ const Page = () => {
                               game.status === "finished"
                                 ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                                 : game.status === "live"
-                                  ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 animate-pulse"
-                                  : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 animate-pulse"
+                                : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                             }`}
                           >
                             {game.status}
                           </span>
                         </td>
 
-                        <td className="p-4">
-                          {game.result || "Not played"}
-                        </td>
+                        <td className="p-4">{game.result || "Not played"}</td>
 
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-3">

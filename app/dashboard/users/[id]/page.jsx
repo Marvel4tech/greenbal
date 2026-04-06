@@ -11,6 +11,8 @@ import {
   User,
   CheckCircle2,
   ArrowLeft,
+  Landmark,
+  CreditCard,
 } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useMemo, useState } from "react"
@@ -237,7 +239,7 @@ const Page = () => {
             <div className="h-4 w-52 bg-gray-200 dark:bg-gray-800 rounded" />
           </div>
         ) : user ? (
-          <div className="space-y-2 text-center md:text-left">
+          <div className="space-y-3 text-center md:text-left w-full">
             <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
               <h2 className="text-xl font-semibold">
                 {user.full_name || user.username || "Unnamed user"}
@@ -275,7 +277,26 @@ const Page = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+              <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
+                <Landmark className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500">Bank Name</p>
+                  <p className="text-sm font-medium">{user.bank_name || "—"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
+                <CreditCard className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500">Bank Account</p>
+                  <p className="text-sm font-medium">{user.bank_account || "—"}</p>
+                </div>
+              </div>
+            </div>
+
             <p className="text-sm text-gray-500">Joined: {joined}</p>
+
             {user.is_deleted ? (
               <p className="text-sm text-red-500">
                 Deleted: {formatDateTime(user.deleted_at)}
@@ -321,7 +342,6 @@ const Page = () => {
           </button>
         </div>
 
-        {/* Horizontal scroll wrapper for mobile */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm md:text-base min-w-[640px]">
             <thead className="bg-primary text-white">

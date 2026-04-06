@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
 
-function buildArchivedAuthEmail(userId) {
+function buildArchivedEmail(userId) {
   const cleanId = String(userId).replace(/-/g, "")
   return `deleted_${cleanId}@deleted.local`
 }
@@ -19,7 +19,21 @@ export async function GET(request, context) {
     const { data: profile, error: profileErr } = await supabaseAdmin
       .from("profiles")
       .select(
-        "id, full_name, username, email, archived_email, country, role, is_banned, is_deleted, deleted_at, created_at"
+        `
+        id,
+        full_name,
+        username,
+        email,
+        archived_email,
+        country,
+        role,
+        bank_name,
+        bank_account,
+        is_banned,
+        is_deleted,
+        deleted_at,
+        created_at
+        `
       )
       .eq("id", id)
       .single()
@@ -208,38 +222,40 @@ export async function DELETE(request, context) {
     }
 
     if (profile.is_deleted) {
-      return NextResponse.json({ error: "User already deleted" }, { status: 400 })
+      return NextResponse.json(
+        { error: "User already deleted" },
+        { status: 400 }
+      )
     }
 
-    // 1) Archive/anonymize profile but KEEP the row for audit
-    const { data: archivedProfile, error: archiveError } = await supabaseAdmin.rpc(
-      "archive_profile",
-      {
+    const archivedEmail = buildArchivedEmail(id)
+
+    // 1) Archive profile row
+    const { data: archivedProfile, error: archiveError } =
+      await supabaseAdmin.rpc("archive_profile", {
         p_user_id: id,
         p_deleted_by: null,
         p_reason: reason,
-      }
-    )
+      })
 
     if (archiveError) {
-      return NextResponse.json({ error: archiveError.message }, { status: 500 })
+      return NextResponse.json(
+        { error: archiveError.message },
+        { status: 500 }
+      )
     }
 
-    // 2) Replace auth email so original email becomes reusable
-    const archivedAuthEmail = buildArchivedAuthEmail(id)
-
-    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-      id,
-      {
-        email: archivedAuthEmail,
+    // 2) Change auth email so original email becomes reusable
+    const { error: authUpdateError } =
+      await supabaseAdmin.auth.admin.updateUserById(id, {
+        email: archivedEmail,
         email_confirm: true,
         user_metadata: {
           archived: true,
           archived_at: new Date().toISOString(),
           original_email: profile.email || null,
         },
-      }
-    )
+      })
 
     if (authUpdateError) {
       return NextResponse.json(
@@ -250,25 +266,11 @@ export async function DELETE(request, context) {
       )
     }
 
-    // 3) Sign user out everywhere
-    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(
-      id,
-      "global"
-    )
-
-    if (signOutError) {
-      return NextResponse.json(
-        {
-          error: `Profile archived and auth email changed, but sign-out failed: ${signOutError.message}`,
-        },
-        { status: 500 }
-      )
-    }
-
     return NextResponse.json({
       success: true,
       profile: archivedProfile,
-      archivedAuthEmail,
+      archivedEmail,
+      message: "User deleted successfully",
     })
   } catch (e) {
     return NextResponse.json(

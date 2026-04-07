@@ -86,7 +86,7 @@ const Page = () => {
           <p className="mt-4 max-w-2xl text-white/80 text-sm md:text-base leading-relaxed">
             greenball360 is a free sports prediction platform built for fans who love competition,
             strategy, and the thrill of a live leaderboard. We're based in{" "}
-            <span className="font-semibold text-white">South London</span> — and we're building a
+            <span className="font-semibold text-white">London</span> — and we're building a
             community where accuracy gets rewarded.
           </p>
 
@@ -103,7 +103,7 @@ const Page = () => {
 
           <div className="mt-6 inline-flex items-center gap-2 text-xs text-white/70">
             <MapPin className="w-4 h-4" />
-            South London, United Kingdom
+            London, United Kingdom
           </div>
         </div>
       </section>

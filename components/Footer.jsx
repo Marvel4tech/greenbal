@@ -87,7 +87,7 @@ const Footer = () => {
               </p>
 
               <Link
-                href="/register"
+                href="/signup"
                 className="relative mt-5 inline-flex w-full justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 active:scale-[0.99]"
               >
                 Create Free Account

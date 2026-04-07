@@ -10,7 +10,7 @@ const adminCards = [
   { title: 'Manage Games', href: '/dashboard/games', icon: <FaFutbol />, color: 'bg-green-100 dark:bg-green-900/30', desc: 'Create and update daily matches.' },
   { title: 'Referrals', href: '/dashboard/referrals', icon: <FaShareAlt />, color: 'bg-blue-100 dark:bg-blue-900/30', desc: 'Track invites, referrals, and rewards.' },
   { title: 'Admin Analytics', href: '/dashboard/admin-analytics', icon: <FaChartBar />, color: 'bg-indigo-100 dark:bg-indigo-900/30', desc: 'View platform stats and insights.' },
-  // { title: 'News & Blogs', href: '/dashboard/news', icon: <FaNewspaper />, color: 'bg-blue-100 dark:bg-blue-900/30', desc: 'Post football news and updates.' },
+  { title: 'News & Blogs', href: '/dashboard/news', icon: <FaNewspaper />, color: 'bg-blue-100 dark:bg-blue-900/30', desc: 'Post football news and updates.' },
   // { title: 'Game Assistance', href: '/dashboard/assistance', icon: <FaInfoCircle />, color: 'bg-orange-100 dark:bg-orange-900/30', desc: 'Head-to-head or team stats.' },
   { title: 'Leaderboard', href: '/dashboard/leaderboard', icon: <FaTrophy />, color: 'bg-purple-100 dark:bg-purple-900/30', desc: 'See top players and scores.' },
   { title: 'Users', href: '/dashboard/users', icon: <FaUsers />, color: 'bg-yellow-100 dark:bg-yellow-900/30', desc: 'View all user profiles.' },

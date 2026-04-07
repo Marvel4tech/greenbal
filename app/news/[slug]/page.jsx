@@ -1,59 +1,98 @@
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ArrowLeft, CalendarDays, User2, Tag } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
 
-const post = {
-  id: 1,
-  title: "Premier League Weekend Preview: Key Matches That Could Shake Up the Table",
-  slug: "premier-league-weekend-preview-key-matches",
-  excerpt:
-    "A big weekend awaits in the Premier League with title contenders, top-four rivals, and relegation fighters all facing crucial fixtures.",
-  category: "Match Preview",
-  date: "April 3, 2026",
-  author: "GreenBall360",
-  image:
-    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=80",
-  body: [
-    "The Premier League returns with another high-stakes weekend, and the pressure is building at both ends of the table. Title challengers are fighting for every point, while clubs chasing European qualification know there is little room for error.",
-    "This round of fixtures brings several headline clashes that could reshape the standings. Managers will be watching fitness reports closely, especially with a number of key players facing late checks before kickoff.",
-    "One of the major talking points this weekend is whether the league leaders can handle the pressure. Momentum matters at this stage of the season, but so does squad depth, tactical discipline, and the ability to manage difficult away matches.",
-    "Further down the table, the battle for survival is becoming just as intense. Teams in the relegation zone are entering must-win territory, and even a single result could change the mood around an entire club.",
-    "Supporters should also expect tactical battles in midfield, where several of the biggest matches may be decided. Control of possession, transitions, and set-piece execution could all prove decisive across the weekend.",
-    "For fans and prediction players alike, this is the kind of football weekend that can define a season. Every match carries weight, every goal matters, and the margins between success and disappointment are becoming increasingly small.",
-  ],
+function formatDate(date) {
+  if (!date) return ""
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(date))
 }
 
-const relatedPosts = [
-  {
-    id: 2,
-    title: "Top 5 Players to Watch This Weekend Across Europe",
-    slug: "top-5-players-to-watch-this-weekend",
-    category: "Player Spotlight",
-    date: "April 2, 2026",
-    image:
-      "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: 3,
-    title: "Transfer Rumour Roundup: Summer Targets Already Taking Shape",
-    slug: "transfer-rumour-roundup-summer-targets",
-    category: "Transfer News",
-    date: "April 2, 2026",
-    image:
-      "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: 4,
-    title: "Champions League Race Heats Up as Clubs Battle for Top Spots",
-    slug: "champions-league-race-heats-up",
-    category: "League Update",
-    date: "April 1, 2026",
-    image:
-      "https://images.unsplash.com/photo-1508098682722-e99c643e7485?auto=format&fit=crop&w=900&q=80",
-  },
-]
+async function getPostBySlug(slug) {
+  const supabase = await createClient()
 
-export default function SingleNewsPage() {
+  const { data } = await supabase
+    .from("news_posts")
+    .select(`
+      id,
+      title,
+      slug,
+      excerpt,
+      content,
+      cover_image_url,
+      seo_title,
+      seo_description,
+      published_at,
+      news_categories (
+        id,
+        name,
+        slug
+      ),
+      profiles!news_posts_author_id_fkey (
+        full_name
+      )
+    `)
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle()
+
+  return data
+}
+
+async function getRelatedPosts(categoryId, currentSlug) {
+  if (!categoryId) return []
+
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from("news_posts")
+    .select(`
+      id,
+      title,
+      slug,
+      cover_image_url,
+      published_at,
+      news_categories (
+        name,
+        slug
+      )
+    `)
+    .eq("status", "published")
+    .eq("category_id", categoryId)
+    .neq("slug", currentSlug)
+    .order("published_at", { ascending: false })
+    .limit(3)
+
+  return data || []
+}
+
+export async function generateMetadata({ params }) {
+  const post = await getPostBySlug(params.slug)
+
+  if (!post) {
+    return {
+      title: "Article Not Found | GreenBall360",
+    }
+  }
+
+  return {
+    title: post.seo_title || post.title,
+    description: post.seo_description || post.excerpt || "GreenBall360 sports news",
+  }
+}
+
+export default async function SingleNewsPage({ params }) {
+  const post = await getPostBySlug(params.slug)
+
+  if (!post) notFound()
+
+  const relatedPosts = await getRelatedPosts(post.news_categories?.id, post.slug)
+
   return (
     <>
       <Navbar />
@@ -69,24 +108,23 @@ export default function SingleNewsPage() {
           </Link>
         </div>
 
-        {/* Hero */}
         <section className="pb-10">
           <div className="max-w-7xl mx-auto px-4 lg:px-0">
             <div className="grid lg:grid-cols-12 gap-10 items-start">
               <div className="lg:col-span-7">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-semibold text-black">
-                    {post.category}
+                    {post.news_categories?.name || "News"}
                   </span>
 
                   <span className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
                     <CalendarDays className="w-4 h-4" />
-                    {post.date}
+                    {formatDate(post.published_at)}
                   </span>
 
                   <span className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
                     <User2 className="w-4 h-4" />
-                    {post.author}
+                    {post.profiles?.full_name || "GreenBall360"}
                   </span>
                 </div>
 
@@ -102,7 +140,7 @@ export default function SingleNewsPage() {
               <div className="lg:col-span-5">
                 <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
                   <img
-                    src={post.image}
+                    src={post.cover_image_url || "/placeholder.jpg"}
                     alt={post.title}
                     className="h-[280px] md:h-[380px] w-full object-cover"
                   />
@@ -112,45 +150,31 @@ export default function SingleNewsPage() {
           </div>
         </section>
 
-        {/* Article + Sidebar */}
         <section className="border-t border-gray-200 dark:border-white/10">
           <div className="max-w-7xl mx-auto px-4 lg:px-0 py-12">
             <div className="grid lg:grid-cols-12 gap-10">
-              {/* Article */}
               <article className="lg:col-span-8">
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 md:p-10 shadow-sm dark:border-white/10 dark:bg-white/5">
-                  <div className="max-w-none">
-                    {post.body.map((paragraph, index) => (
-                      <p
-                        key={index}
-                        className="mb-6 leading-8 text-gray-700 dark:text-white/80"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
+                <div
+                  className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-primary prose-strong:text-gray-900 prose-img:rounded-2xl prose-img:w-full prose-img:my-6 dark:prose-invert dark:prose-p:text-white/80"
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
 
                   <div className="mt-10 border-t border-gray-200 pt-6 dark:border-white/10">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white/80">
                         <Tag className="w-4 h-4 text-primary" />
-                        Tags:
+                        Category:
                       </span>
 
-                      {["Football", "Premier League", "Match Preview", "Weekend Fixtures"].map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:bg-black/40 dark:text-white/75"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                      <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:bg-black/40 dark:text-white/75">
+                        {post.news_categories?.name || "News"}
+                      </span>
                     </div>
                   </div>
                 </div>
               </article>
 
-              {/* Sidebar */}
               <aside className="lg:col-span-4 space-y-6">
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
                   <h3 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
@@ -177,44 +201,24 @@ export default function SingleNewsPage() {
                       >
                         <div className="flex gap-4">
                           <img
-                            src={item.image}
+                            src={item.cover_image_url || "/placeholder.jpg"}
                             alt={item.title}
                             className="h-24 w-24 rounded-2xl object-cover border border-gray-200 dark:border-white/10"
                           />
                           <div className="flex-1">
                             <span className="mb-2 inline-block text-xs font-semibold text-primary">
-                              {item.category}
+                              {item.news_categories?.name || "News"}
                             </span>
                             <h4 className="font-bold leading-6 text-gray-900 transition group-hover:text-primary dark:text-white">
                               {item.title}
                             </h4>
                             <p className="mt-1 text-sm text-gray-500 dark:text-white/50">
-                              {item.date}
+                              {formatDate(item.published_at)}
                             </p>
                           </div>
                         </div>
                       </Link>
                     ))}
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 to-gray-100 p-6 shadow-sm dark:to-white/5">
-                  <h3 className="mb-3 text-xl font-bold text-gray-900 dark:text-white">
-                    Stay Updated
-                  </h3>
-                  <p className="mb-5 leading-7 text-gray-700 dark:text-white/75">
-                    Get the latest football news, previews, and transfer updates from GreenBall360.
-                  </p>
-
-                  <div className="flex flex-col gap-3">
-                    <input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-primary dark:border-white/10 dark:bg-black/50 dark:text-white"
-                    />
-                    <button className="rounded-xl bg-primary px-5 py-3 font-semibold text-black transition hover:opacity-90">
-                      Subscribe
-                    </button>
                   </div>
                 </div>
               </aside>

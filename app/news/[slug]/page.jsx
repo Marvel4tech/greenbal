@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { ArrowLeft, CalendarDays, User2, Tag } from "lucide-react"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClientWrapper } from "@/lib/supabase/server"
 
 function formatDate(date) {
   if (!date) return ""
@@ -14,7 +14,7 @@ function formatDate(date) {
 }
 
 async function getPostBySlug(slug) {
-  const supabase = await createClient()
+  const supabase = await createServerClientWrapper()
 
   const { data } = await supabase
     .from("news_posts")

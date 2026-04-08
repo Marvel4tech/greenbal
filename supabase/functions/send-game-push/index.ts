@@ -1,47 +1,47 @@
 // @ts-nocheck
 
-import { createClient } from "npm:@supabase/supabase-js@2"
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-)
+);
 
-const FIREBASE_PROJECT_ID = Deno.env.get("FIREBASE_PROJECT_ID")!
-const FIREBASE_CLIENT_EMAIL = Deno.env.get("FIREBASE_CLIENT_EMAIL")!
+const FIREBASE_PROJECT_ID = Deno.env.get("FIREBASE_PROJECT_ID")!;
+const FIREBASE_CLIENT_EMAIL = Deno.env.get("FIREBASE_CLIENT_EMAIL")!;
 const FIREBASE_PRIVATE_KEY =
-  (Deno.env.get("FIREBASE_PRIVATE_KEY") || "").replace(/\\n/g, "\n")
+  (Deno.env.get("FIREBASE_PRIVATE_KEY") || "").replace(/\\n/g, "\n");
 
 function pemToArrayBuffer(pem: string) {
   const b64 = pem
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\s/g, "")
+    .replace(/\s/g, "");
 
-  const binary = atob(b64)
-  const bytes = new Uint8Array(binary.length)
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
 
   for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
+    bytes[i] = binary.charCodeAt(i);
   }
 
-  return bytes.buffer
+  return bytes.buffer;
 }
 
 function base64url(input: Uint8Array) {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
-    .replace(/=+$/, "")
+    .replace(/=+$/, "");
 }
 
 async function getAccessToken() {
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000);
 
   const header = {
     alg: "RS256",
     typ: "JWT",
-  }
+  };
 
   const payload = {
     iss: FIREBASE_CLIENT_EMAIL,
@@ -49,12 +49,12 @@ async function getAccessToken() {
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600,
-  }
+  };
 
-  const enc = new TextEncoder()
-  const headerB64 = base64url(enc.encode(JSON.stringify(header)))
-  const payloadB64 = base64url(enc.encode(JSON.stringify(payload)))
-  const unsigned = `${headerB64}.${payloadB64}`
+  const enc = new TextEncoder();
+  const headerB64 = base64url(enc.encode(JSON.stringify(header)));
+  const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
+  const unsigned = `${headerB64}.${payloadB64}`;
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
@@ -65,15 +65,15 @@ async function getAccessToken() {
     },
     false,
     ["sign"]
-  )
+  );
 
   const signature = await crypto.subtle.sign(
     "RSASSA-PKCS1-v1_5",
     key,
     enc.encode(unsigned)
-  )
+  );
 
-  const jwt = `${unsigned}.${base64url(new Uint8Array(signature))}`
+  const jwt = `${unsigned}.${base64url(new Uint8Array(signature))}`;
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -84,15 +84,17 @@ async function getAccessToken() {
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion: jwt,
     }),
-  })
+  });
 
-  const data = await res.json()
+  const data = await res.json();
 
   if (!res.ok || !data?.access_token) {
-    throw new Error(data?.error_description || data?.error || "Failed to get Google access token")
+    throw new Error(
+      data?.error_description || data?.error || "Failed to get Google access token"
+    );
   }
 
-  return data.access_token as string
+  return data.access_token as string;
 }
 
 Deno.serve(async (req) => {
@@ -101,37 +103,49 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
         headers: { "Content-Type": "application/json" },
-      })
+      });
     }
 
-    const body = await req.json().catch(() => ({}))
+    const body = await req.json().catch(() => ({}));
 
-    const title = body?.title || "New game posted"
-    const message = body?.message || "Predictions are now open!"
-    const link = body?.link || "/profile/play"
+    const title = body?.title || "New game posted";
+    const message = body?.message || "Predictions are now open!";
+    const link = body?.link || "/profile/play";
 
     const { data: rows, error } = await supabase
       .from("push_subscriptions")
-      .select("id, fcm_token")
+      .select("id, fcm_token, platform, is_active")
+      .eq("platform", "fcm")
       .eq("is_active", true)
+      .not("fcm_token", "is", null);
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      })
+      });
     }
 
-    const tokens = (rows || []).map((r) => r.fcm_token).filter(Boolean)
+    const tokens = (rows || []).map((r) => r.fcm_token).filter(Boolean);
+
+    console.log("FCM rows found:", rows?.length || 0);
+    console.log("FCM tokens found:", tokens.length);
 
     if (!tokens.length) {
-      return new Response(JSON.stringify({ sent: 0 }), {
-        headers: { "Content-Type": "application/json" },
-      })
+      return new Response(
+        JSON.stringify({
+          sent: 0,
+          message: "No active FCM tokens found",
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const accessToken = await getAccessToken()
-    let sent = 0
+    const accessToken = await getAccessToken();
+    let sent = 0;
+    const failed: Array<{ token: string; error: string }> = [];
 
     for (const token of tokens) {
       const res = await fetch(
@@ -153,6 +167,11 @@ Deno.serve(async (req) => {
                 fcm_options: {
                   link,
                 },
+                notification: {
+                  title,
+                  body: message,
+                  icon: "/icon-192.png",
+                },
               },
               data: {
                 link,
@@ -160,22 +179,25 @@ Deno.serve(async (req) => {
             },
           }),
         }
-      )
+      );
 
-      const json = await res.json().catch(() => null)
+      const json = await res.json().catch(() => null);
 
       if (res.ok) {
-        sent += 1
-        continue
+        sent += 1;
+        continue;
       }
 
       const rawError =
         json?.error?.details?.[0]?.errorCode ||
         json?.error?.status ||
         json?.error?.message ||
-        ""
+        "Unknown FCM error";
 
-      const errorText = String(rawError)
+      const errorText = String(rawError);
+
+      failed.push({ token, error: errorText });
+      console.error("FCM send failed:", errorText, json);
 
       if (
         errorText.includes("UNREGISTERED") ||
@@ -187,14 +209,23 @@ Deno.serve(async (req) => {
             is_active: false,
             updated_at: new Date().toISOString(),
           })
-          .eq("fcm_token", token)
+          .eq("fcm_token", token);
       }
     }
 
-    return new Response(JSON.stringify({ sent }), {
-      headers: { "Content-Type": "application/json" },
-    })
+    return new Response(
+      JSON.stringify({
+        sent,
+        failed_count: failed.length,
+        failed,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (e) {
+    console.error("send-game-push fatal error:", e);
+
     return new Response(
       JSON.stringify({
         error: e instanceof Error ? e.message : "Unknown error",
@@ -203,6 +234,6 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { "Content-Type": "application/json" },
       }
-    )
+    );
   }
-})
+});

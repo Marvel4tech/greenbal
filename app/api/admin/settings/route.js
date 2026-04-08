@@ -18,7 +18,7 @@ async function requireAdmin() {
     .from("profiles")
     .select("id, email, username, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile || profile.role !== "admin") {
     throw new Error("Forbidden");
@@ -35,13 +35,24 @@ export async function GET() {
       .from("app_settings")
       .select("*")
       .eq("id", 1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ settings });
+    return NextResponse.json({
+      settings:
+        settings || {
+          id: 1,
+          app_name: "greenball360",
+          maintenance_mode: false,
+          daily_prediction_limit: 5,
+          points_for_correct: 3,
+          points_for_draw: 1,
+          points_for_wrong: 0,
+        },
+    });
   } catch (error) {
     const status =
       error.message === "Unauthorized" ? 401 : error.message === "Forbidden" ? 403 : 500;
@@ -56,6 +67,7 @@ export async function PATCH(request) {
     const body = await request.json();
 
     const payload = {
+      id: 1,
       app_name: String(body?.appName || "greenball360").trim(),
       maintenance_mode: Boolean(body?.maintenanceMode),
       daily_prediction_limit: Number(body?.dailyPredictionLimit ?? 5),
@@ -86,10 +98,9 @@ export async function PATCH(request) {
 
     const { data, error } = await supabaseAdmin
       .from("app_settings")
-      .update(payload)
-      .eq("id", 1)
+      .upsert(payload, { onConflict: "id" })
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

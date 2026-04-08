@@ -18,7 +18,7 @@ async function requireAdmin() {
     .from("profiles")
     .select("id, email, username, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile || profile.role !== "admin") {
     throw new Error("Forbidden");

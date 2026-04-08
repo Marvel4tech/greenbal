@@ -1,9 +1,26 @@
 "use client";
 
-import { Globe, Save, Search, Settings, Shield, Trophy, X } from "lucide-react";
+import {
+  Globe,
+  Save,
+  Search,
+  Settings,
+  Shield,
+  Trophy,
+  X,
+  ArrowLeft,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+
+const PROTECTED_SUPER_ADMIN_EMAILS = [
+  "marvel4tech@gmail.com",
+  "secondadmin@example.com",
+].map((email) => email.toLowerCase());
+
+function isProtectedSuperAdminEmail(email) {
+  return PROTECTED_SUPER_ADMIN_EMAILS.includes(String(email || "").toLowerCase());
+}
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -18,7 +35,6 @@ function formatDate(iso) {
   });
 }
 
-const PROTECTED_SUPER_ADMIN_EMAIL = "marvel4tech@gmail.com";
 const SEARCH_LIMIT = 50;
 
 const Page = () => {
@@ -405,8 +421,7 @@ const Page = () => {
 
             <div className="space-y-3 max-h-[460px] overflow-auto pr-1">
               {admins.map((user) => {
-                const isProtected =
-                  (user.email || "").toLowerCase() === PROTECTED_SUPER_ADMIN_EMAIL;
+                const isProtected = isProtectedSuperAdminEmail(user.email);
 
                 return (
                   <div
@@ -426,7 +441,7 @@ const Page = () => {
                         </p>
                         {isProtected ? (
                           <p className="text-xs text-red-500 mt-1">
-                            Protected super admin. Cannot be changed to user.
+                            Protected super admin. Cannot be demoted or deleted.
                           </p>
                         ) : null}
                       </div>

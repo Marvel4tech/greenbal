@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClientWrapper } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
-
-const PROTECTED_SUPER_ADMIN_EMAIL = "marvel4tech@gmail.com";
+import { isProtectedSuperAdminEmail } from "@/lib/protectedAdmins";
 
 async function requireAdmin() {
   const supabase = await createServerClientWrapper();
@@ -20,7 +19,7 @@ async function requireAdmin() {
     .from("profiles")
     .select("id, email, username, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile || profile.role !== "admin") {
     throw new Error("Forbidden");
@@ -48,19 +47,17 @@ export async function PATCH(request) {
       .from("profiles")
       .select("id, email, username, role")
       .eq("id", targetUserId)
-      .single();
+      .maybeSingle();
 
     if (targetError || !targetUser) {
       return NextResponse.json({ error: "Target user not found" }, { status: 404 });
     }
 
-    if (
-      targetUser.email &&
-      targetUser.email.toLowerCase() === PROTECTED_SUPER_ADMIN_EMAIL &&
-      nextRole !== "admin"
-    ) {
+    if (isProtectedSuperAdminEmail(targetUser.email) && nextRole !== "admin") {
       return NextResponse.json(
-        { error: `${PROTECTED_SUPER_ADMIN_EMAIL} cannot be changed to user` },
+        {
+          error: `${targetUser.email} is a protected super admin and cannot be changed to user`,
+        },
         { status: 403 }
       );
     }
@@ -73,27 +70,11 @@ export async function PATCH(request) {
       })
       .eq("id", targetUserId)
       .select("id, full_name, username, email, role, created_at, is_banned, is_deleted")
-      .single();
+      .maybeSingle();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-
-    await supabaseAdmin.from("system_logs").insert({
-      user_id: actingAdmin.id,
-      email: actingAdmin.email || null,
-      username: actingAdmin.username || null,
-      role: "admin",
-      action: "role_changed",
-      message: `${actingAdmin.username || actingAdmin.email || actingAdmin.id} changed ${targetUser.email || targetUser.id} role to ${nextRole}`,
-      path: "/dashboard/settings",
-      metadata: {
-        targetUserId,
-        targetEmail: targetUser.email || null,
-        previousRole: targetUser.role,
-        nextRole,
-      },
-    });
 
     return NextResponse.json({
       success: true,

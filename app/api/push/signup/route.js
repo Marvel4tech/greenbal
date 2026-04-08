@@ -16,15 +16,11 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const subscription = body?.subscription;
+    const token = body?.token;
 
-    if (
-      !subscription?.endpoint ||
-      !subscription?.keys?.p256dh ||
-      !subscription?.keys?.auth
-    ) {
+    if (!token) {
       return NextResponse.json(
-        { error: "Invalid subscription payload" },
+        { error: "Missing FCM token" },
         { status: 400 }
       );
     }
@@ -36,25 +32,28 @@ export async function POST(request) {
       .upsert(
         {
           user_id: user.id,
-          endpoint: subscription.endpoint,
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
+          fcm_token: token,
           user_agent: userAgent,
-          platform: "ios_webpush",
+          platform: "fcm",
           is_active: true,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "endpoint" }
+        { onConflict: "fcm_token" }
       );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error?.message || "Failed to save subscription" },
+      {
+        error: error?.message || "Failed to save FCM token",
+      },
       { status: 500 }
     );
   }

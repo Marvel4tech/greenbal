@@ -228,7 +228,7 @@ export async function POST(request) {
 
         // 3) Web Push for iPhone/iPad Home Screen
         try {
-          const { data: webPushSubscriptions, error: subError } = await supabaseAdmin
+          const { data: webPushSubscriptions } = await supabaseAdmin
             .from("push_subscriptions")
             .select("endpoint, p256dh, auth")
             .not("endpoint", "is", null)

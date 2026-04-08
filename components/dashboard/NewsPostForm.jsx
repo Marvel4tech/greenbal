@@ -148,6 +148,15 @@ export default function NewsPostForm({
 
       if (!user) throw new Error("You must be logged in.")
 
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      if (profileError) throw profileError
+
+      const finalAuthorName = profileData?.username || "GreenBall360"
       const finalSlug = slug || slugify(title)
       const finalStatus = submitAction === "publish" ? "published" : "draft"
 
@@ -168,6 +177,7 @@ export default function NewsPostForm({
         content,
         cover_image_url: finalCoverImageUrl,
         category_id: categoryId || null,
+        author_name: finalAuthorName,
         status: finalStatus,
         featured,
         seo_title: seoTitle || null,
@@ -206,6 +216,8 @@ export default function NewsPostForm({
 
       if (dbError) throw dbError
 
+      setStatus(finalStatus)
+
       setMessage(
         finalStatus === "published"
           ? isEdit
@@ -231,11 +243,7 @@ export default function NewsPostForm({
       ? uploadingImage
         ? "Uploading image..."
         : submitAction === "publish"
-        ? isEdit
-          ? "Publishing..."
-          : "Publishing..."
-        : isEdit
-        ? "Saving draft..."
+        ? "Publishing..."
         : "Saving draft..."
       : ""
 

@@ -6,18 +6,23 @@ import NewsPostForm from "@/components/dashboard/NewsPostForm"
 async function getCategories() {
   const supabase = await createServerClientWrapper()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("news_categories")
     .select("id, name, slug")
     .order("name", { ascending: true })
+
+  if (error) {
+    console.error("getCategories error:", error)
+    return []
+  }
 
   return data || []
 }
 
 async function getPostById(id) {
-  const supabase = await createClient()
+  const supabase = await createServerClientWrapper()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("news_posts")
     .select(`
       id,
@@ -36,13 +41,20 @@ async function getPostById(id) {
     .eq("id", id)
     .maybeSingle()
 
+  if (error) {
+    console.error("getPostById error:", error)
+    return null
+  }
+
   return data
 }
 
 export default async function EditNewsPostPage({ params }) {
+  const { id } = await params
+
   const [categories, post] = await Promise.all([
     getCategories(),
-    getPostById(params.id),
+    getPostById(id),
   ])
 
   if (!post) notFound()

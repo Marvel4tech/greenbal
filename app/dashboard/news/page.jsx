@@ -2,6 +2,7 @@ import Link from "next/link"
 import Navbar from "@/components/Navbar"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import DeleteNewsButton from "@/components/dashboard/DeleteNewsButton"
+import { ArrowLeft } from "lucide-react"
 
 function formatDate(date) {
   if (!date) return "—"
@@ -40,8 +41,21 @@ export default async function DashboardNewsPage() {
 
   return (
     <>
+      <Navbar />
+      
       <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
         <div className="max-w-6xl mx-auto px-4 py-10">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+
           <div className="mb-8 flex items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Manage News</h1>
@@ -89,7 +103,15 @@ export default async function DashboardNewsPage() {
                       <td className="px-6 py-4 capitalize">{post.status}</td>
 
                       <td className="px-6 py-4">
-                        {post.featured ? "Yes" : "No"}
+                        {post.featured ? (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            No
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-6 py-4">
@@ -108,6 +130,7 @@ export default async function DashboardNewsPage() {
                           <Link
                             href={`/news/${post.slug}`}
                             className="text-gray-600 hover:underline dark:text-white/70"
+                            target="_blank"
                           >
                             View
                           </Link>

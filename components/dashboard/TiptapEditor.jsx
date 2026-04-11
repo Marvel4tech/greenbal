@@ -48,7 +48,7 @@ export default function TiptapEditor({
         inline: false,
         allowBase64: false,
         HTMLAttributes: {
-          class: "rounded-2xl my-6 w-full object-cover",
+          class: "rounded-xl my-6 w-full object-cover",
         },
       }),
       Link.configure({
@@ -67,7 +67,7 @@ export default function TiptapEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[320px] rounded-b-2xl border-x border-b border-gray-300 bg-white px-4 py-4 outline-none dark:border-white/10 dark:bg-black/40 prose prose-lg max-w-none dark:prose-invert prose-img:rounded-2xl prose-p:text-gray-700 dark:prose-p:text-white/80",
+          "min-h-[320px] rounded-b-xl border-x border-b border-gray-300 bg-white px-4 py-4 outline-none dark:border-white/10 dark:bg-black/40 prose prose-lg max-w-none prose-p:my-4 prose-p:text-gray-700 prose-headings:my-4 prose-img:rounded-xl dark:prose-invert dark:prose-p:text-white/80",
       },
     },
     onUpdate({ editor }) {
@@ -86,6 +86,7 @@ export default function TiptapEditor({
     if (!file) return
 
     const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+
     if (!allowed.includes(file.type)) {
       alert("Only JPG, PNG, and WEBP files are allowed.")
       return
@@ -181,7 +182,7 @@ export default function TiptapEditor({
         onChange={(e) => uploadInlineImage(e.target.files?.[0] || null)}
       />
 
-      <div className="flex flex-wrap gap-2 rounded-t-2xl border border-gray-300 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
+      <div className="flex flex-wrap gap-2 rounded-t-xl border border-gray-300 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
         <button
           type="button"
           className={btn}
@@ -245,20 +246,12 @@ export default function TiptapEditor({
           Paragraph
         </button>
 
-        <button
-          type="button"
-          className={btn}
-          onClick={setLink}
-        >
+        <button type="button" className={btn} onClick={setLink}>
           <LinkIcon className="h-4 w-4" />
           Add Link
         </button>
 
-        <button
-          type="button"
-          className={btn}
-          onClick={unsetLink}
-        >
+        <button type="button" className={btn} onClick={unsetLink}>
           <Unlink className="h-4 w-4" />
           Remove Link
         </button>

@@ -28,13 +28,20 @@ function getStoragePathFromUrl(url) {
 }
 
 export default function NewsPostForm({
-  categories,
+  categories: initialCategories,
   initialData = null,
   mode = "create",
 }) {
   const router = useRouter()
   const supabase = createClient()
   const fileInputRef = useRef(null)
+
+  const [categories, setCategories] = useState(initialCategories || [])
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [newCategorySlug, setNewCategorySlug] = useState("")
+  const [newCategoryDescription, setNewCategoryDescription] = useState("")
+  const [creatingCategory, setCreatingCategory] = useState(false)
 
   const [title, setTitle] = useState(initialData?.title || "")
   const [slug, setSlug] = useState(initialData?.slug || "")
@@ -133,6 +140,51 @@ export default function NewsPostForm({
     if (!oldPath) return
 
     await supabase.storage.from("news-images").remove([oldPath])
+  }
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault()
+    setError("")
+    setMessage("")
+
+    try {
+      setCreatingCategory(true)
+
+      const finalName = newCategoryName.trim()
+      const finalSlug = newCategorySlug.trim() || slugify(finalName)
+
+      if (!finalName) {
+        throw new Error("Category name is required.")
+      }
+
+      const { data, error: insertError } = await supabase
+        .from("news_categories")
+        .insert({
+          name: finalName,
+          slug: finalSlug,
+          description: newCategoryDescription.trim() || null,
+        })
+        .select("id, name, slug")
+        .single()
+
+      if (insertError) throw insertError
+
+      const updatedCategories = [...categories, data].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )
+
+      setCategories(updatedCategories)
+      setCategoryId(data.id)
+      setNewCategoryName("")
+      setNewCategorySlug("")
+      setNewCategoryDescription("")
+      setShowCategoryForm(false)
+      setMessage("Category created and selected successfully.")
+    } catch (err) {
+      setError(err.message || "Failed to create category.")
+    } finally {
+      setCreatingCategory(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -250,7 +302,7 @@ export default function NewsPostForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-3xl border border-gray-200 bg-white p-6 md:p-8 shadow-sm dark:border-white/10 dark:bg-white/5"
+      className="rounded-xl border border-gray-200/70 bg-white p-6 md:p-8 shadow-sm dark:border-white/10 dark:bg-white/5"
     >
       <div className="grid gap-6">
         <div>
@@ -296,6 +348,9 @@ export default function NewsPostForm({
             onChange={setContent}
             articleSlug={slug || title || "news-article"}
           />
+          <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
+            Press Enter to create a new paragraph. It will appear as a proper paragraph on the live article page.
+          </p>
         </div>
 
         <div>
@@ -327,7 +382,7 @@ export default function NewsPostForm({
               setDragActive(false)
               handleFileSelected(e.dataTransfer.files?.[0] || null)
             }}
-            className={`rounded-2xl border-2 border-dashed p-6 transition ${
+            className={`rounded-xl border-2 border-dashed p-6 transition ${
               dragActive
                 ? "border-primary bg-primary/5"
                 : "border-gray-300 bg-gray-50 dark:border-white/10 dark:bg-black/30"
@@ -364,7 +419,7 @@ export default function NewsPostForm({
           )}
 
           {previewUrl && (
-            <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/30">
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/30">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="text-sm font-medium">Cover Preview</p>
 
@@ -396,19 +451,88 @@ export default function NewsPostForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Category</label>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium">Category</label>
+
+            <button
+              type="button"
+              onClick={() => setShowCategoryForm((v) => !v)}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              {showCategoryForm ? "Close" : "Create category"}
+            </button>
+          </div>
+
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
             className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-primary dark:border-white/10 dark:bg-black/50"
           >
-            <option value="">Select category</option>
-            {categories.map((category) => (
+            <option value="">
+              {categories?.length ? "Select category" : "No categories found"}
+            </option>
+
+            {(categories || []).map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
           </select>
+
+          <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
+            Example categories: Match Preview, Transfer News, Analysis, Team News.
+          </p>
+
+          {showCategoryForm && (
+            <div className="mt-4 rounded-xl border border-gray-200/70 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/30">
+              <div className="grid gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">New Category Name</label>
+                  <input
+                    value={newCategoryName}
+                    onChange={(e) => {
+                      setNewCategoryName(e.target.value)
+                      if (!newCategorySlug) {
+                        setNewCategorySlug(slugify(e.target.value))
+                      }
+                    }}
+                    placeholder="e.g. Transfer News"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-primary dark:border-white/10 dark:bg-black/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">New Category Slug</label>
+                  <input
+                    value={newCategorySlug}
+                    onChange={(e) => setNewCategorySlug(slugify(e.target.value))}
+                    placeholder="e.g. transfer-news"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-primary dark:border-white/10 dark:bg-black/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Description</label>
+                  <textarea
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Short description for this category"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none focus:border-primary dark:border-white/10 dark:bg-black/40"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={creatingCategory}
+                  className="w-fit rounded-xl bg-primary px-5 py-2.5 font-semibold text-black transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {creatingCategory ? "Creating..." : "Create and Select Category"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">

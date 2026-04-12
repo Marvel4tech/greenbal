@@ -94,6 +94,14 @@ export async function GET() {
   const currentWeekStart = getCurrentWeekStartYMD(TZ)
   const currentWeekEnd = addDaysYMD(currentWeekStart, 6)
 
+  const startISO = new Date(
+    localMidnightToUtcMs(currentWeekStart, TZ)
+  ).toISOString()
+
+  const endISO = new Date(
+    localMidnightToUtcMs(addDaysYMD(currentWeekEnd, 1), TZ)
+  ).toISOString()
+
   // 1) User weekly row for CURRENT week only
   const { data: row, error: leaderboardError } = await supabase
     .from("leaderboard_weekly")
@@ -113,20 +121,60 @@ export async function GET() {
   const winRate =
     predictions > 0 ? Math.round((correct / predictions) * 100) : 0
 
-  // 2) Total games posted for CURRENT week (Tuesday -> Monday)
-  const startISO = new Date(localMidnightToUtcMs(currentWeekStart, TZ)).toISOString()
-  const endISO = new Date(
-    localMidnightToUtcMs(addDaysYMD(currentWeekEnd, 1), TZ)
-  ).toISOString()
-
-  const { count: totalGamesThisWeek, error: gamesError } = await supabase
-    .from("games")
-    .select("*", { count: "exact", head: true })
-    .gte("match_time", startISO)
-    .lt("match_time", endISO)
+  // 2) All games posted for CURRENT week
+  const { data: weeklyGames, count: totalGamesThisWeek, error: gamesError } =
+    await supabase
+      .from("games")
+      .select("id, home_team, away_team, match_time, status, result", {
+        count: "exact",
+      })
+      .gte("match_time", startISO)
+      .lt("match_time", endISO)
+      .order("match_time", { ascending: true })
 
   if (gamesError) {
     return NextResponse.json({ error: gamesError.message }, { status: 500 })
+  }
+
+  const weeklyGameIds = (weeklyGames || []).map((g) => g.id)
+
+  let recentPredictions = []
+
+  // 3) User predictions for games in CURRENT week
+  if (weeklyGameIds.length > 0) {
+    const { data: predictionRows, error: predictionsError } = await supabase
+      .from("predictions")
+      .select(`
+        id,
+        game_id,
+        prediction,
+        points,
+        created_at,
+        games (
+          id,
+          home_team,
+          away_team,
+          match_time,
+          status,
+          result
+        )
+      `)
+      .eq("user_id", user.id)
+      .in("game_id", weeklyGameIds)
+      .order("created_at", { ascending: false })
+
+    if (predictionsError) {
+      return NextResponse.json({ error: predictionsError.message }, { status: 500 })
+    }
+
+    recentPredictions = (predictionRows || []).map((p) => ({
+      id: p.id,
+      game_id: p.game_id,
+      prediction: p.prediction,
+      points: Number(p.points || 0),
+      created_at: p.created_at,
+      games: Array.isArray(p.games) ? p.games[0] || null : p.games || null,
+    }))
   }
 
   return NextResponse.json({
@@ -138,5 +186,6 @@ export async function GET() {
     weekStart: currentWeekStart,
     weekEnd: currentWeekEnd,
     lastLogin: user.last_sign_in_at,
+    recentPredictions,
   })
 }

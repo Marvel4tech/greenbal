@@ -27,6 +27,22 @@ function getStoragePathFromUrl(url) {
   return decodeURIComponent(url.slice(idx + marker.length))
 }
 
+function normalizeContent(html) {
+  if (!html) return "<p>Start writing...</p>"
+  
+  let normalized = html
+    // Remove empty paragraphs
+    .replace(/<p>\s*<\/p>/g, '')
+    // Ensure paragraphs have proper spacing
+    .replace(/<\/p><p>/g, '</p>\n\n<p>')
+    // Ensure text outside paragraphs gets wrapped
+    if (!normalized.trim().startsWith('<p>')) {
+      normalized = '<p>' + normalized + '</p>'
+    }
+  
+  return normalized
+}
+
 export default function NewsPostForm({
   categories: initialCategories,
   initialData = null,
@@ -222,11 +238,14 @@ export default function NewsPostForm({
         )
       }
 
+      // Normalize content before saving
+      const normalizedContent = normalizeContent(content)
+
       const payload = {
         title,
         slug: finalSlug,
         excerpt,
-        content,
+        content: normalizedContent,
         cover_image_url: finalCoverImageUrl,
         category_id: categoryId || null,
         author_name: finalAuthorName,

@@ -102,6 +102,11 @@ export default async function SingleNewsPage({ params }) {
 
   const relatedPosts = await getRelatedPosts(post.news_categories?.id, post.slug)
 
+  // Clean and format content for proper display
+  const cleanContent = (post.content || "")
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/<\/p><p>/g, '</p><p>')
+
   return (
     <>
       <Navbar />
@@ -196,28 +201,44 @@ export default async function SingleNewsPage({ params }) {
           <div className="grid gap-10 lg:grid-cols-12">
             {/* Article Content */}
             <article className="lg:col-span-8 lg:col-start-1">
-              <div className="prose prose-lg max-w-none
-                prose-p:my-6
-                prose-p:leading-8
-                prose-headings:font-bold
-                prose-headings:mt-10
-                prose-headings:mb-4
-                prose-h2:text-2xl
-                prose-h3:text-xl
-                prose-img:my-8
-                prose-img:rounded-xl
-                prose-img:shadow-lg
-                prose-a:text-primary
-                prose-a:no-underline
-                prose-a:font-semibold
-                prose-strong:text-gray-900
-                dark:prose-invert
-                dark:prose-p:text-gray-300
-                dark:prose-strong:text-white"
+              <div 
+                className="prose prose-lg max-w-none
+                  prose-p:mb-5
+                  prose-p:leading-relaxed
+                  prose-p:text-gray-700
+                  prose-headings:font-bold
+                  prose-headings:mt-8
+                  prose-headings:mb-4
+                  prose-h2:text-2xl
+                  prose-h2:font-bold
+                  prose-h3:text-xl
+                  prose-h3:font-semibold
+                  prose-ul:my-4
+                  prose-ul:list-disc
+                  prose-ul:pl-6
+                  prose-ol:my-4
+                  prose-ol:list-decimal
+                  prose-ol:pl-6
+                  prose-li:my-1
+                  prose-img:my-8
+                  prose-img:rounded-xl
+                  prose-img:shadow-lg
+                  prose-a:text-primary
+                  prose-a:no-underline
+                  prose-a:font-semibold
+                  prose-a:hover:underline
+                  prose-strong:text-gray-900
+                  prose-strong:font-bold
+                  prose-blockquote:border-l-4
+                  prose-blockquote:border-primary
+                  prose-blockquote:pl-4
+                  prose-blockquote:italic
+                  dark:prose-invert
+                  dark:prose-p:text-gray-300
+                  dark:prose-strong:text-white
+                  dark:prose-headings:text-white"
                 dangerouslySetInnerHTML={{
-                  __html: (post.content || "")
-                    .replace(/<p><\/p>/g, "")
-                    .replace(/<p>\s*<\/p>/g, ""),
+                  __html: cleanContent
                 }}
               />
 

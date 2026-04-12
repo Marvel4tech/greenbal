@@ -43,7 +43,37 @@ export default function TiptapEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        paragraph: {
+          HTMLAttributes: {
+            class: "mb-4 leading-relaxed",
+          },
+        },
+        heading: {
+          levels: [1, 2, 3],
+          HTMLAttributes: {
+            class: "font-bold mt-6 mb-4",
+          },
+        },
+        bulletList: {
+          HTMLAttributes: {
+            class: "list-disc ml-6 mb-4",
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: "list-decimal ml-6 mb-4",
+          },
+        },
+        listItem: {
+          HTMLAttributes: {
+            class: "mb-1",
+          },
+        },
+        hardBreak: {
+          keepMarks: true,
+        },
+      }),
       Image.configure({
         inline: false,
         allowBase64: false,
@@ -67,11 +97,12 @@ export default function TiptapEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[320px] rounded-b-xl border-x border-b border-gray-300 bg-white px-4 py-4 outline-none dark:border-white/10 dark:bg-black/40 prose prose-lg max-w-none prose-p:my-4 prose-p:text-gray-700 prose-headings:my-4 prose-img:rounded-xl dark:prose-invert dark:prose-p:text-white/80",
+          "min-h-[320px] rounded-b-xl border-x border-b border-gray-300 bg-white px-4 py-4 outline-none dark:border-white/10 dark:bg-black/40",
       },
     },
     onUpdate({ editor }) {
-      onChange(editor.getHTML())
+      const html = editor.getHTML()
+      onChange(html)
     },
   })
 

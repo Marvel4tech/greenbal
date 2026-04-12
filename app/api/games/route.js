@@ -75,8 +75,6 @@ function todayYMDInTZ(timeZone) {
   return `${y}-${m}-${d}`;
 }
 
-// Converts a London local datetime like "2026-04-04T12:45"
-// into the correct UTC ISO string for storage.
 function londonLocalDateTimeToUtcIso(localDateTime) {
   const match = String(localDateTime).match(
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
@@ -101,9 +99,6 @@ function londonLocalDateTimeToUtcIso(localDateTime) {
   return new Date(utcMs).toISOString();
 }
 
-// Accept either:
-// 1. local datetime from <input type="datetime-local"> => "2026-04-04T12:45"
-// 2. already-UTC ISO => "2026-04-04T11:45:00.000Z"
 function normalizeMatchTime(matchTime) {
   const value = String(matchTime).trim();
 
@@ -216,6 +211,9 @@ export async function POST(request) {
 
           const pushJson = await pushRes.json().catch(() => null);
 
+          console.log("FCM push status:", pushRes.status);
+          console.log("FCM push response:", pushJson);
+
           if (!pushRes.ok) {
             console.error(
               "Push notification failed:",
@@ -228,9 +226,14 @@ export async function POST(request) {
 
         // 3) Web Push for iPhone/iPad Home Screen
         try {
-          const { data: webPushSubscriptions } = await supabaseAdmin
+          const {
+            data: webPushSubscriptions,
+            error: subError,
+          } = await supabaseAdmin
             .from("push_subscriptions")
-            .select("endpoint, p256dh, auth")
+            .select("endpoint, p256dh, auth, platform, is_active")
+            .eq("platform", "ios_webpush")
+            .eq("is_active", true)
             .not("endpoint", "is", null)
             .not("p256dh", "is", null)
             .not("auth", "is", null);
@@ -238,9 +241,14 @@ export async function POST(request) {
           if (subError) {
             console.error("Web push subscription fetch error:", subError);
           } else {
+            console.log(
+              "Web push subscriptions count:",
+              webPushSubscriptions?.length || 0
+            );
+
             for (const sub of webPushSubscriptions || []) {
               try {
-                await sendWebPush(
+                const result = await sendWebPush(
                   {
                     endpoint: sub.endpoint,
                     keys: {
@@ -258,16 +266,28 @@ export async function POST(request) {
                     },
                   }
                 );
+
+                console.log(
+                  "Web push sent successfully:",
+                  result?.statusCode || "ok"
+                );
               } catch (error) {
                 const statusCode = error?.statusCode;
 
                 if (statusCode === 404 || statusCode === 410) {
                   await supabaseAdmin
                     .from("push_subscriptions")
-                    .delete()
+                    .update({
+                      is_active: false,
+                      updated_at: new Date().toISOString(),
+                    })
                     .eq("endpoint", sub.endpoint);
                 } else {
-                  console.error("Web push send failed:", error);
+                  console.error(
+                    "Web push send failed:",
+                    statusCode,
+                    error?.body || error?.message || error
+                  );
                 }
               }
             }

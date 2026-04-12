@@ -210,7 +210,7 @@ useEffect(() => {
                     <p className="text-[11px] text-white/70 mt-1">Correct draw</p>
                   </div>
                   <div className="rounded-xl bg-white/10 border border-white/10 p-4 text-center">
-                    <p className="text-2xl font-extrabold text-white">0</p>
+                    <p className="text-2xl font-extrabold text-white">0 point</p>
                     <p className="text-[11px] text-white/70 mt-1">Wrong pick</p>
                   </div>
                 </div>

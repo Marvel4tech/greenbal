@@ -3,8 +3,12 @@ import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin";
 import { withAdminLog } from "@/lib/withAdminLog";
 import { NextResponse } from "next/server";
 import { sendNotificationToAllUsers } from "@/lib/notifications/sendNotification";
+import { sendWebPush } from "@/lib/sendWebPush";
 
 const TZ = "Europe/London";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const PUSH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-game-push`;
 
 function parseGmtOffsetToMinutes(gmt) {
   if (!gmt || gmt === "GMT") return 0;
@@ -103,6 +107,106 @@ function buildSafeGameUpdate(body) {
   return updateData;
 }
 
+async function sendPushToAllDevices({ title, message, link }) {
+  // FCM push for Android/Desktop
+  try {
+    const pushRes = await fetch(PUSH_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+      },
+      body: JSON.stringify({
+        title,
+        message,
+        link,
+      }),
+    });
+
+    const pushJson = await pushRes.json().catch(() => null);
+
+    console.log("FCM push status:", pushRes.status);
+    console.log("FCM push response:", pushJson);
+
+    if (!pushRes.ok) {
+      console.error("FCM push failed:", pushJson || pushRes.statusText);
+    }
+  } catch (pushError) {
+    console.error("FCM push error:", pushError);
+  }
+
+  // Web Push for iPhone/iPad Home Screen
+  try {
+    const {
+      data: webPushSubscriptions,
+      error: subError,
+    } = await supabaseAdmin
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth, platform, is_active")
+      .eq("platform", "ios_webpush")
+      .eq("is_active", true)
+      .not("endpoint", "is", null)
+      .not("p256dh", "is", null)
+      .not("auth", "is", null);
+
+    if (subError) {
+      console.error("Web push subscription fetch error:", subError);
+      return;
+    }
+
+    console.log(
+      "Web push subscriptions count:",
+      webPushSubscriptions?.length || 0
+    );
+
+    for (const sub of webPushSubscriptions || []) {
+      try {
+        const result = await sendWebPush(
+          {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.p256dh,
+              auth: sub.auth,
+            },
+          },
+          {
+            title,
+            body: message,
+            icon: "/icon-192.png",
+            badge: "/icon-192.png",
+            data: {
+              link,
+            },
+          }
+        );
+
+        console.log("Web push sent successfully:", result?.statusCode || "ok");
+      } catch (error) {
+        const statusCode = error?.statusCode;
+
+        if (statusCode === 404 || statusCode === 410) {
+          await supabaseAdmin
+            .from("push_subscriptions")
+            .update({
+              is_active: false,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("endpoint", sub.endpoint);
+        } else {
+          console.error(
+            "Web push send failed:",
+            statusCode,
+            error?.body || error?.message || error
+          );
+        }
+      }
+    }
+  } catch (webPushError) {
+    console.error("Web push notification error:", webPushError);
+  }
+}
+
 // UPDATE game result / details
 export async function PATCH(request, { params }) {
   try {
@@ -141,12 +245,16 @@ export async function PATCH(request, { params }) {
           data.result &&
           allowedResults.has(data.result)
         ) {
+          const title = "Game result updated";
+          const message = `${data.home_team} vs ${data.away_team} has been completed and scored.`;
+          const link = "/profile/play";
+
           try {
             await sendNotificationToAllUsers({
               type: "game_finished",
-              title: "Game result updated",
-              message: `${data.home_team} vs ${data.away_team} has been completed and scored.`,
-              link: "/profile/play",
+              title,
+              message,
+              link,
             });
           } catch (notificationError) {
             console.error(
@@ -154,6 +262,8 @@ export async function PATCH(request, { params }) {
               notificationError
             );
           }
+
+          await sendPushToAllDevices({ title, message, link });
 
           const scoring = await scoreGame(id);
 
@@ -164,16 +274,22 @@ export async function PATCH(request, { params }) {
           });
         }
 
+        const title = "Game updated";
+        const message = `${data.home_team} vs ${data.away_team} has been updated.`;
+        const link = "/profile/play";
+
         try {
           await sendNotificationToAllUsers({
             type: "game_updated",
-            title: "Game updated",
-            message: `${data.home_team} vs ${data.away_team} has been updated.`,
-            link: "/profile/play",
+            title,
+            message,
+            link,
           });
         } catch (notificationError) {
           console.error("Game update notification error:", notificationError);
         }
+
+        await sendPushToAllDevices({ title, message, link });
 
         return NextResponse.json({
           success: true,

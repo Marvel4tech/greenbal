@@ -55,23 +55,29 @@ export async function GET(request) {
       id: r.user_id,
       week_start: r.week_start,
       name: r.profiles?.username || "Unknown",
-      points: r.points_total ?? 0,
-      correct_total: r.correct_total ?? 0,
-      predictions_total: r.predictions_total ?? 0,
+      points: Number(r.points_total ?? 0),
+      gamesPlayed: Number(r.predictions_total ?? 0),
+      correct_total: Number(r.correct_total ?? 0),
+      predictions_total: Number(r.predictions_total ?? 0),
       duration: "—",
     }))
 
     // If no userId provided, just return rows
     if (!userId) {
-      return NextResponse.json({ week_start: weekStart, rows, me: null })
+      return NextResponse.json({
+        week_start: weekStart,
+        rows,
+        me: null,
+      })
     }
 
-    // 2) Fetch my weekly row only if user is not deleted
+    // 2) Fetch current user's weekly row only if user is not deleted
     const { data: myRow, error: myErr } = await supabaseAdmin
       .from("leaderboard_weekly")
       .select(
         `
         user_id,
+        week_start,
         points_total,
         correct_total,
         predictions_total,
@@ -92,14 +98,14 @@ export async function GET(request) {
     }
 
     if (!myRow) {
-      return NextResponse.json({ week_start: weekStart, rows, me: null })
+      return NextResponse.json({
+        week_start: weekStart,
+        rows,
+        me: null,
+      })
     }
 
-    const myPoints = myRow.points_total ?? 0
-    const myCorrect = myRow.correct_total ?? 0
-    const myPredictions = myRow.predictions_total ?? 0
-
-    // 3) Compute my rank excluding deleted users
+    // 3) Compute user's rank excluding deleted users
     const { data: allRanks, error: rankErr } = await supabaseAdmin
       .from("leaderboard_weekly")
       .select(
@@ -131,13 +137,18 @@ export async function GET(request) {
     const me = {
       id: myRow.user_id,
       name: myRow.profiles?.username || "You",
-      points: myPoints,
-      correct_total: myCorrect,
-      predictions_total: myPredictions,
+      points: Number(myRow.points_total ?? 0),
+      gamesPlayed: Number(myRow.predictions_total ?? 0),
+      correct_total: Number(myRow.correct_total ?? 0),
+      predictions_total: Number(myRow.predictions_total ?? 0),
       rank: myIndex >= 0 ? myIndex + 1 : null,
     }
 
-    return NextResponse.json({ week_start: weekStart, rows, me })
+    return NextResponse.json({
+      week_start: weekStart,
+      rows,
+      me,
+    })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

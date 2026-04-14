@@ -68,7 +68,7 @@ const Page = () => {
   const siderlinks = [
     { label: "Home", href: "/", icon: Home },
     { label: "Leaderboard", href: "/profile/leaderboard", icon: Trophy },
-    { label: "Play", href: "/profile/play", icon: Gamepad2 },
+    { label: "Predict", href: "/profile/play", icon: Gamepad2 },
     { label: "Rewards Wallet", href: "/profile/wallet", icon: Wallet2 },
     { label: "Referrals", href: "/profile/referrals", icon: User2 },
   ]

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+/* import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 
@@ -119,4 +119,15 @@ export async function POST(req) {
       { status: 500 }
     )
   }
+} */
+
+import { NextResponse } from "next/server"
+
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: "Deprecated route. Use /api/admin/payouts/[id]/approve instead.",
+    },
+    { status: 410 }
+  )
 }

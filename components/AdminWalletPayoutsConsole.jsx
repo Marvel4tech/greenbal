@@ -1,4 +1,4 @@
-"use client"
+/*"use client"
 
 import { useMemo, useState } from "react"
 
@@ -398,4 +398,4 @@ function PaidHistoryTable({ payoutBatches = [] }) {
       </div>
     </div>
   )
-}
+} */

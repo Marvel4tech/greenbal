@@ -99,7 +99,7 @@ export default async function WalletPage() {
     .single()
 
   const { data: txs } = await supabase
-    .from("wallet_transactions")
+    .from("wallet_transactions") 
     .select(
       "id, type, week_start, week_end, amount_gbp, status, paid_at, created_at, expires_at, payout_batch_id"
     )

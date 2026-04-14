@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+/* import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 
@@ -163,6 +163,115 @@ export async function POST(req) {
   } catch (error) {
     return NextResponse.json(
       { error: error?.message || "Server error" },
+      { status: 500 }
+    )
+  }
+} */
+
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/requireAdmin"
+import { supabaseAdmin } from "@/lib/supabase/supabaseAdmin"
+
+export async function POST(req) {
+  try {
+    const admin = await requireAdmin()
+
+    if (!admin.ok) {
+      return NextResponse.json(
+        { error: admin.error },
+        { status: admin.status }
+      )
+    }
+
+    const adminUser = admin.user
+
+    const formData = await req.formData()
+    const userId = formData.get("userId")
+    const receipt = formData.get("receipt")
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Missing userId" },
+        { status: 400 }
+      )
+    }
+
+    if (!receipt || typeof receipt === "string") {
+      return NextResponse.json(
+        { error: "Receipt file is required" },
+        { status: 400 }
+      )
+    }
+
+    const { data: txs, error: txErr } = await supabaseAdmin
+      .from("wallet_transactions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "available")
+
+    if (txErr) {
+      return NextResponse.json(
+        { error: txErr.message },
+        { status: 500 }
+      )
+    }
+
+    if (!txs?.length) {
+      return NextResponse.json(
+        { error: "No available transactions for this user" },
+        { status: 400 }
+      )
+    }
+
+    const originalName = receipt.name || "receipt"
+    const ext = originalName.includes(".")
+      ? originalName.split(".").pop().toLowerCase()
+      : "bin"
+
+    const safeExt = ext.replace(/[^a-z0-9]/g, "") || "bin"
+    const filePath = `${userId}/${Date.now()}.${safeExt}`
+
+    const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
+      .from("receipts")
+      .upload(filePath, receipt, {
+        upsert: true,
+        contentType: receipt.type || undefined,
+      })
+
+    if (uploadErr) {
+      return NextResponse.json(
+        { error: uploadErr.message },
+        { status: 500 }
+      )
+    }
+
+    const storedPath = uploadData?.path || filePath
+    const txIds = txs.map((t) => t.id)
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("wallet_transactions")
+      .update({
+        status: "paid",
+        paid_at: new Date().toISOString(),
+        paid_by: adminUser.id,
+        receipt_path: storedPath,
+      })
+      .in("id", txIds)
+
+    if (updateErr) {
+      return NextResponse.json(
+        { error: updateErr.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+      paidTransactionIds: txIds,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      { error: error.message || "Server error" },
       { status: 500 }
     )
   }

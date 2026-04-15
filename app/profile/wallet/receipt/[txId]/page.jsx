@@ -2,7 +2,15 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import { createServerClientWrapper } from "@/lib/supabase/server"
-import { ArrowLeft, Download, FileText, BadgePoundSterling, CalendarDays, ShieldCheck, Eye } from "lucide-react"
+import {
+  ArrowLeft,
+  Download,
+  FileText,
+  BadgePoundSterling,
+  CalendarDays,
+  ShieldCheck,
+  Eye,
+} from "lucide-react"
 
 function transactionTitle(type) {
   if (type === "weekly_top5_reward") return "Weekly Top 5 Reward"
@@ -11,10 +19,10 @@ function transactionTitle(type) {
 }
 
 function getFileTypeFromPath(path) {
-  const ext = path.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return 'pdf'
-  if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return 'image'
-  return 'unknown'
+  const ext = path?.split(".").pop()?.toLowerCase()
+  if (ext === "pdf") return "pdf"
+  if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) return "image"
+  return "unknown"
 }
 
 export default async function ReceiptPage({ params }) {
@@ -42,6 +50,7 @@ export default async function ReceiptPage({ params }) {
       paid_at,
       week_start,
       week_end,
+      receipt_path,
       payout_batch_id
     `)
     .eq("id", txId)
@@ -52,19 +61,57 @@ export default async function ReceiptPage({ params }) {
     redirect("/profile/wallet")
   }
 
-  if (tx.status !== "paid" || !tx.payout_batch_id) {
+  if (tx.status !== "paid") {
     redirect("/profile/wallet")
   }
 
-  const { data: batch, error: batchError } = await supabase
-    .from("payout_batches")
-    .select("id, receipt_path, paid_at, total_amount_gbp")
-    .eq("id", tx.payout_batch_id)
-    .single()
+  let batch = null
+  let batchItems = [tx]
+  let receiptPath = tx.receipt_path
+  let paidAt = tx.paid_at
 
-  if (batchError || !batch?.receipt_path) {
+  if (tx.payout_batch_id) {
+    const { data: batchData } = await supabase
+      .from("payout_batches")
+      .select("id, user_id, total_amount_gbp, receipt_path, paid_at, created_at")
+      .eq("id", tx.payout_batch_id)
+      .eq("user_id", user.id)
+      .single()
+
+    if (batchData) {
+      batch = batchData
+      receiptPath = batchData.receipt_path || tx.receipt_path
+      paidAt = batchData.paid_at || tx.paid_at
+
+      const { data: batchTxs } = await supabase
+        .from("wallet_transactions")
+        .select(`
+          id,
+          type,
+          amount_gbp,
+          week_start,
+          week_end,
+          paid_at,
+          payout_batch_id
+        `)
+        .eq("user_id", user.id)
+        .eq("payout_batch_id", tx.payout_batch_id)
+        .order("created_at", { ascending: true })
+
+      if (batchTxs?.length) {
+        batchItems = batchTxs
+      }
+    }
+  }
+
+  if (!receiptPath) {
     redirect("/profile/wallet")
   }
+
+  const totalAmount = batchItems.reduce(
+    (sum, item) => sum + Number(item.amount_gbp || 0),
+    0
+  )
 
   const adminDb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -79,20 +126,17 @@ export default async function ReceiptPage({ params }) {
 
   const { data: signedData, error: signedError } = await adminDb.storage
     .from("receipts")
-    .createSignedUrl(batch.receipt_path, 300)
+    .createSignedUrl(receiptPath, 300)
 
   if (signedError || !signedData?.signedUrl) {
     redirect("/profile/wallet")
   }
 
   const receiptUrl = signedData.signedUrl
-  const paidAt = tx.paid_at || batch.paid_at
-  const txTitle = transactionTitle(tx.type)
-  const fileType = getFileTypeFromPath(batch.receipt_path)
+  const fileType = getFileTypeFromPath(receiptPath)
 
   return (
     <div className="max-w-4xl mx-auto px-4 lg:px-0 py-10">
-      {/* Back */}
       <div className="mb-6">
         <Link
           href="/profile/wallet"
@@ -103,9 +147,7 @@ export default async function ReceiptPage({ params }) {
         </Link>
       </div>
 
-      {/* Main card */}
       <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 overflow-hidden shadow-xl">
-        {/* Top */}
         <div className="relative px-6 md:px-8 py-8 border-b border-gray-200 dark:border-white/10">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
@@ -133,13 +175,12 @@ export default async function ReceiptPage({ params }) {
             <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-5 py-4 min-w-[220px]">
               <p className="text-xs text-gray-500 dark:text-white/50">Amount Paid</p>
               <p className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                £{Number(tx.amount_gbp || 0).toFixed(2)}
+                £{Number(totalAmount).toFixed(2)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Details */}
         <div className="px-6 md:px-8 py-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-5">
             <div className="flex items-center gap-3">
@@ -147,21 +188,16 @@ export default async function ReceiptPage({ params }) {
                 <FileText className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-white/50">Reward Type</p>
+                <p className="text-xs text-gray-500 dark:text-white/50">
+                  Payment Type
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {txTitle}
+                  {batchItems.length > 1
+                    ? `Combined Wallet Payout (${batchItems.length} items)`
+                    : transactionTitle(batchItems[0]?.type)}
                 </p>
               </div>
             </div>
-
-            {tx.week_start && tx.week_end ? (
-              <div className="mt-4 text-sm text-gray-600 dark:text-white/70">
-                Period:{" "}
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {tx.week_start} → {tx.week_end}
-                </span>
-              </div>
-            ) : null}
           </div>
 
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-5">
@@ -184,7 +220,9 @@ export default async function ReceiptPage({ params }) {
                 <BadgePoundSterling className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-white/50">Processed By</p>
+                <p className="text-xs text-gray-500 dark:text-white/50">
+                  Processed By
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   GreenBall360
                 </p>
@@ -193,15 +231,49 @@ export default async function ReceiptPage({ params }) {
           </div>
 
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-5">
-            <p className="text-xs text-gray-500 dark:text-white/50">Receipt Reference</p>
+            <p className="text-xs text-gray-500 dark:text-white/50">
+              Receipt Reference
+            </p>
             <p className="mt-1 break-all text-sm font-semibold text-gray-900 dark:text-white">
-              {batch.id}
+              {batch?.id || tx.id}
             </p>
           </div>
         </div>
 
-        {/* Embedded Receipt Section */}
-        <div className="border-t border-gray-200 dark:border-white/10 px-6 md:px-8 py-8">
+        <div className="px-6 md:px-8 pb-2">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-5">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Payment Breakdown
+            </h2>
+
+            <div className="mt-4 space-y-3">
+              {batchItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-200 dark:border-white/10 pb-3 last:border-0 last:pb-0"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {transactionTitle(item.type)}
+                    </p>
+
+                    {item.week_start && item.week_end ? (
+                      <p className="text-xs text-gray-500 dark:text-white/50">
+                        {item.week_start} → {item.week_end}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    £{Number(item.amount_gbp || 0).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-200 dark:border-white/10 px-6 md:px-8 py-8 mt-8">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -209,6 +281,7 @@ export default async function ReceiptPage({ params }) {
                 Payment Proof
               </h2>
             </div>
+
             <div className="flex gap-2">
               <a
                 href={receiptUrl}
@@ -219,6 +292,7 @@ export default async function ReceiptPage({ params }) {
                 <FileText className="h-3 w-3" />
                 Open in new tab
               </a>
+
               <a
                 href={receiptUrl}
                 download
@@ -230,23 +304,22 @@ export default async function ReceiptPage({ params }) {
             </div>
           </div>
 
-          {/* Display Receipt Based on File Type */}
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 overflow-hidden">
-            {fileType === 'image' ? (
+            {fileType === "image" ? (
               <div className="p-4 flex justify-center items-center bg-white dark:bg-black/20">
                 <img
                   src={receiptUrl}
                   alt="Payment receipt"
                   className="max-w-full h-auto rounded-lg shadow-md"
-                  style={{ maxHeight: '600px', objectFit: 'contain' }}
+                  style={{ maxHeight: "600px", objectFit: "contain" }}
                 />
               </div>
-            ) : fileType === 'pdf' ? (
+            ) : fileType === "pdf" ? (
               <div className="p-2">
                 <iframe
                   src={`${receiptUrl}#view=fitH`}
                   className="w-full rounded-lg"
-                  style={{ height: '600px', border: 'none' }}
+                  style={{ height: "600px", border: "none" }}
                   title="Payment receipt PDF"
                 />
               </div>
@@ -268,15 +341,14 @@ export default async function ReceiptPage({ params }) {
               </div>
             )}
           </div>
-          
+
           <p className="mt-3 text-xs text-center text-gray-500 dark:text-gray-500">
             This receipt serves as official confirmation of payment from GreenBall360.
-            {fileType === 'pdf' && " Use the controls above to zoom or download the PDF."}
-            {fileType === 'image' && " Click the image to zoom or download for your records."}
+            {fileType === "pdf" && " Use the controls above to zoom or download the PDF."}
+            {fileType === "image" && " You can open or download the image for your records."}
           </p>
         </div>
 
-        {/* Actions - Simplified since embedded */}
         <div className="px-6 md:px-8 pb-8 flex flex-col sm:flex-row gap-3 justify-end">
           <Link
             href="/profile/wallet"

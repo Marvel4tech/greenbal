@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createServerClientWrapper } from "@/lib/supabase/server"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ChevronDown } from "lucide-react"
 
 function StatusPill({ status }) {
   const s = (status || "").toLowerCase()
@@ -73,14 +73,68 @@ function transactionSubtitle(tx) {
 
 function transactionDateLabel(tx) {
   if (tx.paid_at) {
-    return `Paid: ${new Date(tx.paid_at).toLocaleString()}`
+    return `Paid: ${new Date(tx.paid_at).toLocaleString("en-GB")}`
   }
 
   if (tx.expires_at && tx.status === "expired") {
-    return `Expired: ${new Date(tx.expires_at).toLocaleString()}`
+    return `Expired: ${new Date(tx.expires_at).toLocaleString("en-GB")}`
   }
 
-  return `Created: ${new Date(tx.created_at).toLocaleString()}`
+  return `Created: ${new Date(tx.created_at).toLocaleString("en-GB")}`
+}
+
+function buildHistoryRows(txs = []) {
+  const groupedPaid = new Map()
+  const normalRows = []
+
+  for (const tx of txs) {
+    // Group only paid transactions that were paid together
+    if (tx.status === "paid" && tx.payout_batch_id) {
+      const key = tx.payout_batch_id
+
+      if (!groupedPaid.has(key)) {
+        groupedPaid.set(key, {
+          id: key,
+          kind: "paid_group",
+          status: "paid",
+          payout_batch_id: tx.payout_batch_id,
+          paid_at: tx.paid_at,
+          created_at: tx.created_at,
+          receipt_path: tx.receipt_path || null,
+          amount_gbp: 0,
+          items: [],
+        })
+      }
+
+      const group = groupedPaid.get(key)
+      group.amount_gbp += Number(tx.amount_gbp || 0)
+      group.items.push(tx)
+
+      // keep latest paid_at/created_at just in case
+      if (tx.paid_at && (!group.paid_at || new Date(tx.paid_at) > new Date(group.paid_at))) {
+        group.paid_at = tx.paid_at
+      }
+      if (tx.created_at && new Date(tx.created_at) > new Date(group.created_at)) {
+        group.created_at = tx.created_at
+      }
+      if (!group.receipt_path && tx.receipt_path) {
+        group.receipt_path = tx.receipt_path
+      }
+    } else {
+      normalRows.push({
+        ...tx,
+        kind: "single",
+      })
+    }
+  }
+
+  const groupedRows = Array.from(groupedPaid.values())
+
+  return [...normalRows, ...groupedRows].sort((a, b) => {
+    const da = new Date(a.paid_at || a.created_at).getTime()
+    const db = new Date(b.paid_at || b.created_at).getTime()
+    return db - da
+  })
 }
 
 export default async function WalletPage() {
@@ -99,9 +153,9 @@ export default async function WalletPage() {
     .single()
 
   const { data: txs } = await supabase
-    .from("wallet_transactions") 
+    .from("wallet_transactions")
     .select(
-      "id, type, week_start, week_end, amount_gbp, status, paid_at, created_at, expires_at, payout_batch_id"
+      "id, type, week_start, week_end, amount_gbp, status, paid_at, created_at, expires_at, receipt_path, payout_batch_id"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -109,9 +163,10 @@ export default async function WalletPage() {
   const available = Number(wallet?.available_balance_gbp || 0)
   const pending = Number(wallet?.pending_balance_gbp || 0)
 
+  const historyRows = buildHistoryRows(txs || [])
+
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-0 py-10">
-      {/* Back button */}
       <div className="mb-6">
         <Link
           href="/profile"
@@ -122,7 +177,6 @@ export default async function WalletPage() {
         </Link>
       </div>
 
-      {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
           Rewards Wallet
@@ -148,7 +202,6 @@ export default async function WalletPage() {
         </div>
       </div>
 
-      {/* Balance Cards */}
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm dark:shadow-none">
           <div className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-100">
@@ -195,7 +248,6 @@ export default async function WalletPage() {
         </div>
       </div>
 
-      {/* History */}
       <div className="mt-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 overflow-hidden shadow-sm dark:shadow-none">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/10">
           <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -210,54 +262,104 @@ export default async function WalletPage() {
         </div>
 
         <div className="divide-y divide-gray-200 dark:divide-white/10">
-          {(txs || []).map((tx) => {
-            const subtitle = transactionSubtitle(tx)
+          {historyRows.map((row) => {
+            const isPaidGroup = row.kind === "paid_group"
 
             return (
               <div
-                key={tx.id}
-                className="px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                key={isPaidGroup ? `paid-group-${row.id}` : row.id}
+                className="px-5 py-4"
               >
-                <div className="min-w-0">
-                  <p className="text-sm text-gray-900 dark:text-white truncate">
-                    {transactionTitle(tx)}
-                    {subtitle ? (
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="min-w-0">
+                    {isPaidGroup ? (
                       <>
-                        <span className="text-gray-400 dark:text-white/50"> • </span>
-                        <span className="text-gray-600 dark:text-white/70">
-                          {subtitle}
-                        </span>
+                        <p className="text-sm text-gray-900 dark:text-white truncate">
+                          Payout Received
+                          <span className="text-gray-400 dark:text-white/50"> • </span>
+                          <span className="text-gray-600 dark:text-white/70">
+                            {row.items.length} reward{row.items.length > 1 ? "s" : ""}
+                          </span>
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <StatusPill status="paid" />
+                          <p className="text-xs text-gray-500 dark:text-white/50">
+                            Paid: {new Date(row.paid_at || row.created_at).toLocaleString("en-GB")}
+                          </p>
+                        </div>
+
+                        <details className="mt-3 group">
+                          <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/60">
+                            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                            Show breakdown
+                          </summary>
+
+                          <div className="mt-3 space-y-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3">
+                            {row.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs"
+                              >
+                                <div className="text-gray-700 dark:text-white/80">
+                                  {transactionTitle(item)}
+                                  {item.week_start && item.week_end
+                                    ? ` • ${item.week_start} → ${item.week_end}`
+                                    : ""}
+                                </div>
+
+                                <div className="font-semibold text-gray-900 dark:text-white">
+                                  £{Number(item.amount_gbp).toFixed(2)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
                       </>
-                    ) : null}
-                  </p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-900 dark:text-white truncate">
+                          {transactionTitle(row)}
+                          {transactionSubtitle(row) ? (
+                            <>
+                              <span className="text-gray-400 dark:text-white/50"> • </span>
+                              <span className="text-gray-600 dark:text-white/70">
+                                {transactionSubtitle(row)}
+                              </span>
+                            </>
+                          ) : null}
+                        </p>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <StatusPill status={tx.status} />
-                    <p className="text-xs text-gray-500 dark:text-white/50">
-                      {transactionDateLabel(tx)}
-                    </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <StatusPill status={row.status} />
+                          <p className="text-xs text-gray-500 dark:text-white/50">
+                            {transactionDateLabel(row)}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    £{Number(tx.amount_gbp).toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      £{Number(row.amount_gbp).toFixed(2)}
+                    </span>
 
-                  {tx.status === "paid" && tx.payout_batch_id ? (
-                    <Link
-                      href={`/profile/wallet/receipt/${tx.id}`}
-                      className="text-sm rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20 transition"
-                    >
-                      View receipt
-                    </Link>
-                  ) : null}
+                    {isPaidGroup && row.items?.length ? (
+                      <Link
+                        href={`/profile/wallet/receipt/${row.items[0].id}`}
+                        className="text-sm rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20 transition"
+                      >
+                        View receipt
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             )
           })}
 
-          {!txs?.length && (
+          {!historyRows.length && (
             <div className="px-5 py-10 text-sm text-gray-500 dark:text-white/60">
               No wallet activity yet. Make predictions, climb the leaderboard, and invite friends.
             </div>

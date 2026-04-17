@@ -15,16 +15,46 @@ import {
 
 const emptyToDash = (v) => (v ? v : "—")
 
-function Input({ label, value, onChange }) {
+function Input({ label, value, onChange, placeholder = "" }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+        {label}
+      </span>
       <input
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+        className="h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-black/30 px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/30"
       />
     </label>
+  )
+}
+
+function InfoRow({ icon: Icon, value }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/5 px-3 py-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="w-4 h-4" />
+      </div>
+      <span className="text-sm text-gray-700 dark:text-gray-200 break-all">
+        {emptyToDash(value)}
+      </span>
+    </div>
+  )
+}
+
+function DetailCard({ icon: Icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/5 p-4 shadow-sm">
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+        {Icon ? <Icon className="w-4 h-4" /> : null}
+        <span>{label}</span>
+      </div>
+      <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">
+        {emptyToDash(value)}
+      </p>
+    </div>
   )
 }
 
@@ -105,6 +135,7 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
         ...data,
         avatar_url: form.avatar_url || data.avatar_url || "",
       })
+
       setOpen(false)
     } catch (e) {
       setError(e.message)
@@ -175,151 +206,118 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
   }
 
   return (
-    <div className="flex flex-col bg-white dark:bg-black/70 overflow-hidden">
-      <div className="p-8">
+    <div className="overflow-hidden rounded-2xl bg-white dark:bg-black/70">
+      <div className="relative border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-primary/10 via-white to-white dark:from-primary/10 dark:via-black/40 dark:to-black/40 px-6 py-8 sm:px-8">
+        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+
         {!profile && <p className="text-sm text-gray-500">Loading profile…</p>}
 
         {profile && (
-          <>
-            <div className="flex flex-col items-center text-center">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                className="
-                  group relative
-                  w-28 sm:w-32 md:w-40
-                  aspect-square
-                  rounded-full
-                  overflow-hidden
-                  border-4 border-white dark:border-white/10
-                  bg-gray-100 dark:bg-black
-                  shadow-xl
-                  transition-all duration-300
-                  hover:scale-[1.03]
-                  hover:shadow-[0_0_40px_rgba(34,197,94,0.35)]
-                "
-              >
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt="Profile picture"
-                    className="w-full h-full object-cover rounded-full"
-                    loading="eager"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
-                    <span className="text-4xl md:text-5xl font-bold text-primary">
-                      {initials}
-                    </span>
-                  </div>
-                )}
-
-                <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/35 flex items-center justify-center transition">
-                  <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-semibold flex items-center gap-2 transition">
-                    <Camera className="w-4 h-4" />
-                    Change photo
+          <div className="relative flex flex-col items-center text-center">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="group relative h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 overflow-hidden rounded-full border-4 border-white dark:border-white/10 bg-gray-100 dark:bg-black shadow-2xl transition hover:scale-[1.02]"
+            >
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="Profile picture"
+                  className="h-full w-full rounded-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
+                  <span className="text-4xl md:text-5xl font-bold text-primary">
+                    {initials}
                   </span>
                 </div>
-              </button>
+              )}
 
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => uploadAvatar(e.target.files?.[0])}
-              />
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition group-hover:bg-black/35">
+                <span className="flex items-center gap-2 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                  <Camera className="h-4 w-4" />
+                  Change
+                </span>
+              </div>
+            </button>
 
-              <h2 className="mt-4 text-lg font-semibold">My profile</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                @{profile.username || "username-not-set"}
-              </p>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => uploadAvatar(e.target.files?.[0])}
+            />
 
-              <div className="mt-4 flex gap-2">
+            <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
+              {profile.full_name || "My profile"}
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              @{profile.username || "username-not-set"}
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Button
+                size="sm"
+                className="gap-2 rounded-full"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+              >
+                <Camera className="w-4 h-4" />
+                Upload
+              </Button>
+
+              {avatarSrc && (
                 <Button
                   size="sm"
-                  className="gap-2"
-                  onClick={() => avatarInputRef.current?.click()}
+                  variant="outline"
+                  className="gap-2 rounded-full text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  onClick={removeAvatar}
+                  disabled={uploadingAvatar}
                 >
-                  <Camera className="w-4 h-4" />
-                  Upload
+                  <Trash2 className="w-4 h-4" />
+                  Remove
                 </Button>
-
-                {avatarSrc && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2 text-red-500 border-red-200 hover:bg-red-50"
-                    onClick={removeAvatar}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Remove
-                  </Button>
-                )}
-              </div>
-
-              {uploadingAvatar && (
-                <p className="mt-2 text-xs text-primary">
-                  Uploading profile picture...
-                </p>
               )}
-            </div>
 
-            <div className="mt-6 flex justify-center">
-              <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 rounded-full"
+                onClick={() => setOpen(true)}
+              >
                 <Edit2Icon className="w-4 h-4" />
                 Edit Profile
               </Button>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  {emptyToDash(profile.email)}
-                </span>
-              </div>
+            {uploadingAvatar && (
+              <p className="mt-3 text-xs font-medium text-primary">
+                Uploading profile picture...
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  {emptyToDash(profile.phone)}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  {emptyToDash(profile.country)}
-                </span>
-              </div>
+      <div className="p-6 sm:p-8">
+        {profile && (
+          <>
+            <div className="grid grid-cols-1 gap-3">
+              <InfoRow icon={Mail} value={profile.email} />
+              <InfoRow icon={Phone} value={profile.phone} />
+              <InfoRow icon={MapPin} value={profile.country} />
             </div>
 
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-white/5">
-                <p className="text-xs text-gray-500 flex items-center gap-2">
-                  <User2 className="w-4 h-4" /> Full Name
-                </p>
-                <p className="text-sm font-semibold">{emptyToDash(profile.full_name)}</p>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-white/5">
-                <p className="text-xs text-gray-500">Gender</p>
-                <p className="text-sm font-semibold">{emptyToDash(profile.gender)}</p>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-white/5">
-                <p className="text-xs text-gray-500 flex items-center gap-2">
-                  <Landmark className="w-4 h-4" /> Bank
-                </p>
-                <p className="text-sm font-semibold">{emptyToDash(profile.bank_name)}</p>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-white/5">
-                <p className="text-xs text-gray-500">Account No</p>
-                <p className="text-sm font-semibold">{emptyToDash(profile.bank_account)}</p>
-              </div>
+              <DetailCard icon={User2} label="Full Name" value={profile.full_name} />
+              <DetailCard label="Gender" value={profile.gender} />
+              <DetailCard icon={Landmark} label="Bank" value={profile.bank_name} />
+              <DetailCard label="Account No" value={profile.bank_account} />
             </div>
           </>
         )}
@@ -328,74 +326,72 @@ const ProfileUserCard = ({ profile, onProfileUpdated }) => {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setOpen(false)}
+        >
           <div
-            className="
-              w-full 
-              md:w-1/2
-              lg:w-1/2
-              xl:w-2/5
-              max-w-2xl
-              min-w-[280px]
-              rounded-2xl 
-              bg-white dark:bg-gray-900 
-              border border-gray-200 dark:border-gray-700 
-              shadow-xl 
-              overflow-hidden 
-              flex flex-col
-              max-h-[90vh]
-            "
+            className="flex max-h-[90vh] w-full max-w-2xl min-w-[280px] flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10">
-              <h3 className="font-semibold">Edit profile</h3>
+            <div className="sticky top-0 z-10 border-b border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Edit profile
+              </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Fill what you want — you can update anytime.
+                Update your details anytime.
               </p>
             </div>
 
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto flex-1">
+            <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-5 sm:grid-cols-2">
               <Input
                 label="Full name"
                 value={form.full_name}
+                placeholder="Enter full name"
                 onChange={(v) => setForm((s) => ({ ...s, full_name: v }))}
               />
               <Input
                 label="Username"
                 value={form.username}
+                placeholder="Enter username"
                 onChange={(v) => setForm((s) => ({ ...s, username: v }))}
               />
               <Input
                 label="Country"
                 value={form.country}
+                placeholder="Enter country"
                 onChange={(v) => setForm((s) => ({ ...s, country: v }))}
               />
               <Input
                 label="Phone"
                 value={form.phone}
+                placeholder="Enter phone number"
                 onChange={(v) => setForm((s) => ({ ...s, phone: v }))}
               />
               <Input
                 label="Gender"
                 value={form.gender}
+                placeholder="Enter gender"
                 onChange={(v) => setForm((s) => ({ ...s, gender: v }))}
               />
               <Input
                 label="Bank name"
                 value={form.bank_name}
+                placeholder="Enter bank name"
                 onChange={(v) => setForm((s) => ({ ...s, bank_name: v }))}
               />
               <Input
                 label="Bank account"
                 value={form.bank_account}
+                placeholder="Enter account number"
                 onChange={(v) => setForm((s) => ({ ...s, bank_account: v }))}
               />
             </div>
 
             {error && <p className="px-5 pb-2 text-sm text-red-500">{error}</p>}
 
-            <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-              <div className="p-4 md:p-5 flex items-center justify-end gap-2">
+            <div className="sticky bottom-0 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+              <div className="flex items-center justify-end gap-2 p-4 md:p-5">
                 <Button
                   variant="outline"
                   onClick={() => setOpen(false)}

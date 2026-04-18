@@ -142,7 +142,7 @@ export default async function SingleNewsPage({ params }) {
                 </Link>
 
                 <Link
-                  href="/profile"
+                  href="/profile/play"
                   className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-black hover:bg-primary/90 transition-all"
                 >
                   <Gamepad2 className="w-4 h-4" />

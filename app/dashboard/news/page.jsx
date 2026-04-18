@@ -2,7 +2,6 @@ import Link from "next/link"
 import Navbar from "@/components/Navbar"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 import DeleteNewsButton from "@/components/dashboard/DeleteNewsButton"
-import { ArrowLeft } from "lucide-react"
 
 function formatDate(date) {
   if (!date) return "—"
@@ -13,10 +12,23 @@ function formatDate(date) {
   }).format(new Date(date))
 }
 
+function getStatusBadge(status) {
+  switch (status) {
+    case "published":
+      return "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
+    case "draft":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-300"
+    case "archived":
+      return "bg-gray-200 text-gray-700 dark:bg-white/10 dark:text-white/70"
+    default:
+      return "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-white/70"
+  }
+}
+
 async function getDashboardPosts() {
   const supabase = await createServerClientWrapper()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("news_posts")
     .select(`
       id,
@@ -33,29 +45,37 @@ async function getDashboardPosts() {
     `)
     .order("created_at", { ascending: false })
 
+  if (error) {
+    console.error("getDashboardPosts error:", error)
+    return []
+  }
+
   return data || []
 }
 
-export default async function DashboardNewsPage() {
+export default async function DashboardNewsPage({ searchParams }) {
   const posts = await getDashboardPosts()
+  const params = await searchParams
+  const activeFilter = params?.status || "all"
+
+  const filteredPosts =
+    activeFilter === "all"
+      ? posts
+      : posts.filter((post) => post.status === activeFilter)
+
+  const filters = [
+    { label: "All", value: "all" },
+    { label: "Draft", value: "draft" },
+    { label: "Published", value: "published" },
+    { label: "Archived", value: "archived" },
+  ]
 
   return (
     <>
       <Navbar />
-      
+
       <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
         <div className="max-w-6xl mx-auto px-4 py-10">
-          {/* Back Button */}
-          <div className="mb-6">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
-          </div>
-
           <div className="mb-8 flex items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Manage News</h1>
@@ -64,15 +84,41 @@ export default async function DashboardNewsPage() {
               </p>
             </div>
 
-            <Link
-              href="/dashboard/news/new"
-              className="rounded-xl bg-primary px-5 py-3 font-semibold text-black transition hover:opacity-90"
-            >
-              New Post
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard/news/new"
+                className="rounded-xl bg-primary px-5 py-3 font-semibold text-black transition hover:opacity-90"
+              >
+                New Post
+              </Link>
+            </div>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+          <div className="mb-6 flex flex-wrap gap-3">
+            {filters.map((filter) => {
+              const isActive = activeFilter === filter.value
+
+              return (
+                <Link
+                  key={filter.value}
+                  href={
+                    filter.value === "all"
+                      ? "/dashboard/news"
+                      : `/dashboard/news?status=${filter.value}`
+                  }
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-primary text-black"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+                  }`}
+                >
+                  {filter.label}
+                </Link>
+              )
+            })}
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-gray-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-white/5">
@@ -87,7 +133,7 @@ export default async function DashboardNewsPage() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-                  {posts.map((post) => (
+                  {filteredPosts.map((post) => (
                     <tr key={post.id}>
                       <td className="px-6 py-4">
                         <div className="font-semibold">{post.title}</div>
@@ -100,18 +146,18 @@ export default async function DashboardNewsPage() {
                         {post.news_categories?.name || "—"}
                       </td>
 
-                      <td className="px-6 py-4 capitalize">{post.status}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusBadge(
+                            post.status
+                          )}`}
+                        >
+                          {post.status}
+                        </span>
+                      </td>
 
                       <td className="px-6 py-4">
-                        {post.featured ? (
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                            Yes
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                            No
-                          </span>
-                        )}
+                        {post.featured ? "Yes" : "No"}
                       </td>
 
                       <td className="px-6 py-4">
@@ -127,13 +173,18 @@ export default async function DashboardNewsPage() {
                             Edit
                           </Link>
 
-                          <Link
-                            href={`/news/${post.slug}`}
-                            className="text-gray-600 hover:underline dark:text-white/70"
-                            target="_blank"
-                          >
-                            View
-                          </Link>
+                          {post.status === "published" ? (
+                            <Link
+                              href={`/news/${post.slug}`}
+                              className="text-gray-600 hover:underline dark:text-white/70"
+                            >
+                              View
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400 dark:text-white/30">
+                              Draft
+                            </span>
+                          )}
 
                           <DeleteNewsButton
                             postId={post.id}
@@ -146,13 +197,13 @@ export default async function DashboardNewsPage() {
                     </tr>
                   ))}
 
-                  {posts.length === 0 && (
+                  {filteredPosts.length === 0 && (
                     <tr>
                       <td
                         colSpan={6}
                         className="px-6 py-10 text-center text-gray-500 dark:text-white/50"
                       >
-                        No news posts yet.
+                        No posts found for this filter.
                       </td>
                     </tr>
                   )}

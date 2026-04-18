@@ -281,15 +281,15 @@ const Page = () => {
         </aside>
 
         {/* Main */}
-        <div className="flex-1 relative">
+        <div className="min-w-0 flex-1 relative">
           {/* Top horizontal news slider */}
-          <div className="px-0 pt-4 md:px-0 md:pt-6">
+          <div className="min-w-0 px-0 pt-4 md:px-0 md:pt-6">
             <ProfileNewsSlider />
           </div>
 
-          <div className="flex flex-col md:flex-row pt-4 pb-6 md:pb-8 gap-6">
+          <div className="flex min-w-0 flex-col md:flex-row pt-4 pb-6 md:pb-8 gap-6">
             {/* Left */}
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <ProfileUserCard
                 profile={profile}
                 onProfileUpdated={(updated) => setProfile(updated)}
@@ -297,7 +297,7 @@ const Page = () => {
             </div>
 
             {/* Right */}
-            <div className="flex-1 flex flex-col gap-6">
+            <div className="min-w-0 flex-1 flex flex-col gap-6">
               <div>
                 {profileLoading ? (
                   <div className="rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-black/50 p-5 shadow-xl">
@@ -321,7 +321,7 @@ const Page = () => {
               <EnablePushNotifications />
 
               {/* Recent Predictions */}
-              <div className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 shadow-2xl">
+              <div className="relative min-w-0 overflow-hidden rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/70 shadow-2xl">
                 <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
 
                 <div className="relative p-5 border-b border-gray-200 dark:border-white/10">
@@ -357,7 +357,7 @@ const Page = () => {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[500px] text-xs">
                     <thead className="bg-gray-50 dark:bg-white/5">
                       <tr>
@@ -444,13 +444,12 @@ const Page = () => {
                   </table>
                 </div>
 
-                {stats.recentPredictions?.length > 10 && (
-                  <div className="border-t border-gray-200 dark:border-white/10 px-4 py-3">
-                    <p className="text-[11px] text-gray-500 dark:text-white/50">
-                      Showing your latest 10 predictions this week.
-                    </p>
-                  </div>
-                )}
+                <div className="border-t border-gray-200 dark:border-white/10 px-4 py-3">
+                  <p className="text-[11px] leading-5 text-gray-600 dark:text-white/70">
+                    The more matches you predict, the better your chances of reaching
+                    the top of the leaderboard and winning the weekly reward.
+                  </p>
+                </div>
               </div>
 
               {/* Win rate + points */}

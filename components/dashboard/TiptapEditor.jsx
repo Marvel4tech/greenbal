@@ -11,6 +11,7 @@ import {
   Italic,
   List,
   ListOrdered,
+  Heading1,
   Heading2,
   Heading3,
   Pilcrow,
@@ -44,7 +45,6 @@ export default function TiptapEditor({
   const fileInputRef = useRef(null)
 
   const [uploading, setUploading] = useState(false)
-
   const [showArticlePicker, setShowArticlePicker] = useState(false)
   const [articleSearch, setArticleSearch] = useState("")
   const [articles, setArticles] = useState([])
@@ -54,31 +54,8 @@ export default function TiptapEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        paragraph: {
-          HTMLAttributes: {
-            class: "mb-4 leading-relaxed",
-          },
-        },
         heading: {
-          levels: [1, 2, 3],
-          HTMLAttributes: {
-            class: "font-bold mt-6 mb-4",
-          },
-        },
-        bulletList: {
-          HTMLAttributes: {
-            class: "list-disc ml-6 mb-4",
-          },
-        },
-        orderedList: {
-          HTMLAttributes: {
-            class: "list-decimal ml-6 mb-4",
-          },
-        },
-        listItem: {
-          HTMLAttributes: {
-            class: "mb-1",
-          },
+          levels: [1, 2, 3, 4, 5, 6],
         },
         hardBreak: {
           keepMarks: true,
@@ -111,8 +88,7 @@ export default function TiptapEditor({
       },
     },
     onUpdate({ editor }) {
-      const html = editor.getHTML()
-      onChange(html)
+      onChange(editor.getHTML())
     },
   })
 
@@ -254,10 +230,27 @@ export default function TiptapEditor({
     editor.chain().focus().extendMarkRange("link").unsetLink().run()
   }
 
+  const setNormalText = () => {
+    if (!editor) return
+    editor
+      .chain()
+      .focus()
+      .clearNodes()
+      .unsetAllMarks()
+      .setParagraph()
+      .run()
+  }
+
   if (!editor) return null
 
   const btn =
     "inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-white/10 dark:bg-black/40 dark:text-white/80 dark:hover:bg-white/10"
+
+  const activeBtn =
+    "inline-flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-sm text-primary"
+
+  const headingBtnClass = (level) =>
+    editor.isActive("heading", { level }) ? activeBtn : btn
 
   return (
     <div className="relative">
@@ -272,7 +265,16 @@ export default function TiptapEditor({
       <div className="flex flex-wrap gap-2 rounded-t-xl border border-gray-300 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
         <button
           type="button"
-          className={btn}
+          className={!editor.isActive("paragraph") && !editor.isActive("bold") && !editor.isActive("italic") ? activeBtn : btn}
+          onClick={setNormalText}
+        >
+          <Pilcrow className="h-4 w-4" />
+          Normal
+        </button>
+
+        <button
+          type="button"
+          className={editor.isActive("bold") ? activeBtn : btn}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold className="h-4 w-4" />
@@ -281,7 +283,7 @@ export default function TiptapEditor({
 
         <button
           type="button"
-          className={btn}
+          className={editor.isActive("italic") ? activeBtn : btn}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic className="h-4 w-4" />
@@ -290,25 +292,16 @@ export default function TiptapEditor({
 
         <button
           type="button"
-          className={btn}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={headingBtnClass(1)}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
         >
-          <List className="h-4 w-4" />
-          Bullet List
+          <Heading1 className="h-4 w-4" />
+          H1
         </button>
 
         <button
           type="button"
-          className={btn}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="h-4 w-4" />
-          Numbered List
-        </button>
-
-        <button
-          type="button"
-          className={btn}
+          className={headingBtnClass(2)}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         >
           <Heading2 className="h-4 w-4" />
@@ -317,7 +310,7 @@ export default function TiptapEditor({
 
         <button
           type="button"
-          className={btn}
+          className={headingBtnClass(3)}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           <Heading3 className="h-4 w-4" />
@@ -326,11 +319,44 @@ export default function TiptapEditor({
 
         <button
           type="button"
-          className={btn}
-          onClick={() => editor.chain().focus().setParagraph().run()}
+          className={headingBtnClass(4)}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
         >
-          <Pilcrow className="h-4 w-4" />
-          Paragraph
+          H4
+        </button>
+
+        <button
+          type="button"
+          className={headingBtnClass(5)}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+        >
+          H5
+        </button>
+
+        <button
+          type="button"
+          className={headingBtnClass(6)}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+        >
+          H6
+        </button>
+
+        <button
+          type="button"
+          className={editor.isActive("bulletList") ? activeBtn : btn}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <List className="h-4 w-4" />
+          Bullet List
+        </button>
+
+        <button
+          type="button"
+          className={editor.isActive("orderedList") ? activeBtn : btn}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <ListOrdered className="h-4 w-4" />
+          Numbered List
         </button>
 
         <button type="button" className={btn} onClick={setExternalLink}>

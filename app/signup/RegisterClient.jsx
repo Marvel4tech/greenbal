@@ -45,13 +45,13 @@ const RegisterClient = () => {
     e.preventDefault()
     setLoading(true)
     setError('')
-
+  
     try {
       localStorage.setItem('signup_email', formData.email)
-
+  
       const referralCode =
         ref || localStorage.getItem('pending_referral_code') || null
-
+  
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -63,11 +63,11 @@ const RegisterClient = () => {
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         },
       })
-
+  
       if (signUpError) {
         throw signUpError
       }
-
+  
       if (authData.user) {
         const response = await fetch('/api/create-profile', {
           method: 'POST',
@@ -81,14 +81,22 @@ const RegisterClient = () => {
             referralCode,
           }),
         })
-
+  
         const result = await response.json()
-
+  
         if (!response.ok) {
           throw new Error(result.error || 'Failed to create profile')
         }
       }
-
+  
+      // ✅ Google Analytics tracking (SAFE)
+      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+        window.gtag('event', 'sign_up', {
+          method: 'email',
+          referral_used: referralCode ? 'yes' : 'no',
+        })
+      }
+  
       localStorage.removeItem('pending_referral_code')
       router.push('/verify-email')
     } catch (error) {

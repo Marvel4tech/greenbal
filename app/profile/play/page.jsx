@@ -154,15 +154,15 @@ const Page = () => {
 
   const handlePrediction = async (match, predictionValue) => {
     if (!canPredictOnSelectedDate) return
-
+  
     const hasStarted = new Date(match.startTime) <= now
     const isLocked = Boolean(predictions[match.id])
-
+  
     if (hasStarted || isLocked) return
-
+  
     try {
       setSavingGameId(match.id)
-
+  
       const res = await fetch("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,14 +171,22 @@ const Page = () => {
           prediction: predictionValue,
         }),
       })
-
+  
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || "Failed to save prediction")
-
+  
       setPredictions((prev) => ({
         ...prev,
         [match.id]: predictionValue,
       }))
+  
+      if (typeof window !== "undefined" && typeof window.gtag === "function") {
+        window.gtag("event", "submit_prediction", {
+          game_id: String(match.id),
+          prediction: predictionValue,
+          match_date: selectedDate,
+        })
+      }
     } catch (err) {
       alert(err.message)
     } finally {

@@ -380,10 +380,10 @@ const Page = () => {
                   Result:{" "}
                   <span className="font-semibold">
                     {match.result === "homeWin"
-                      ? `${match.home} Win`
+                      ? `${match.home} Won`
                       : match.result === "draw"
                       ? "Draw"
-                      : `${match.away} Win`}
+                      : `${match.away} Won`}
                   </span>
                 </p>
               )}

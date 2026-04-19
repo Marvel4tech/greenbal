@@ -7,6 +7,28 @@ import { Trophy, Crown, Sparkles, ArrowRight, Info, ShieldCheck } from "lucide-r
 import Navbar from "@/components/Navbar"
 import { ArrowLeft } from 'lucide-react'
 
+export const metadata = {
+  title: 'Public Leaderboard',
+  description:
+    'View the Greenball360 public leaderboard and see how players rank on our free football prediction platform.',
+  keywords: [
+    'football leaderboard',
+    'public leaderboard',
+    'free football prediction leaderboard',
+    'Greenball360 rankings',
+  ],
+  alternates: {
+    canonical: '/leaderboard',
+  },
+  openGraph: {
+    title: 'Public Leaderboard | Greenball360',
+    description:
+      'Check the latest rankings on the Greenball360 public leaderboard.',
+    url: 'https://greenball360.com/leaderboard',
+  },
+};
+
+
 const Page = () => {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -17,27 +39,6 @@ const Page = () => {
   const debounceRef = useRef(null)
   const hideToastRef = useRef(null)
 
-  /*const fetchLeaderboard = useCallback(async () => {
-    try {
-      setError("")
-      const res = await fetch("/api/leaderboard/public", { cache: "no-store" })
-      const text = await res.text()
-
-      let data = []
-      try {
-        data = text ? JSON.parse(text) : []
-      } catch {
-        throw new Error("Server did not return JSON")
-      }
-
-      if (!res.ok) throw new Error(data?.error || "Failed to fetch leaderboard")
-      setPlayers(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])*/
 
   const fetchLeaderboard = useCallback(async () => {
     try {

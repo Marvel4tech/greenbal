@@ -6,6 +6,16 @@ import { Eye, EyeOff, User, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
+export const metadata = {
+  title: 'Sign In',
+  description:
+    'Sign in to your Greenball360 account and continue using our free football prediction platform.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 const Page = () => {
   const supabase = createClient()
 

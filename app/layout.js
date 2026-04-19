@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import Footer from "@/components/Footer";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -97,18 +98,7 @@ export default function RootLayout({ children }) {
           <Footer />
         </ThemeProvider>
 
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-35675X76YH"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-35675X76YH');
-          `}
-        </Script>
+        <GoogleAnalytics gaId="G-35675X76YH" />
       </body>
     </html>
   );

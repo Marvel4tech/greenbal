@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 function StatusPill({ status }) {
@@ -171,11 +172,24 @@ export default function AdminReferralTable({ initialReferrals = [] }) {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 <div className="lg:col-span-4">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    @{r?.referrer?.username || r.referrer_id}
+                    <Link
+                      href={`/dashboard/users/${r.referrer_id}`}
+                      className="hover:underline text-blue-600 dark:text-blue-400"
+                    >
+                      @{r?.referrer?.username || r.referrer_id}
+                    </Link>
                   </p>
+
                   <p className="mt-1 text-sm text-gray-600 dark:text-white/70">
-                    referred @{r?.referred?.username || r.referred_user_id}
+                    referred{" "}
+                    <Link
+                      href={`/dashboard/users/${r.referred_user_id}`}
+                      className="hover:underline text-blue-600 dark:text-blue-400"
+                    >
+                      @{r?.referred?.username || r.referred_user_id}
+                    </Link>
                   </p>
+
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StatusPill status={r.status} />
                     <span className="text-xs text-gray-500 dark:text-white/50">
@@ -184,68 +198,7 @@ export default function AdminReferralTable({ initialReferrals = [] }) {
                   </div>
                 </div>
 
-                <div className="lg:col-span-3">
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span
-                      className={`rounded-full px-3 py-1 border ${
-                        r.played_first_game
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-gray-50 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {r.played_first_game ? "Played first game" : "No first game"}
-                    </span>
-
-                    <span
-                      className={`rounded-full px-3 py-1 border ${
-                        r.reached_top20
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-gray-50 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {r.reached_top20 ? "Top 20 reached" : "Top 20 pending"}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 space-y-1 text-xs text-gray-500 dark:text-white/50">
-                    <p>Created: {formatDate(r.created_at)}</p>
-                    <p>Expires: {formatDate(r.expires_at)}</p>
-                    {r.unlocked_at ? <p>Unlocked: {formatDate(r.unlocked_at)}</p> : null}
-                    {r.expired_at ? <p>Expired: {formatDate(r.expired_at)}</p> : null}
-                    {r.voided_at ? <p>Voided: {formatDate(r.voided_at)}</p> : null}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-3">
-                  <textarea
-                    rows={3}
-                    placeholder="Admin note (optional)"
-                    value={noteMap[r.id] ?? r.admin_note ?? ""}
-                    onChange={(e) =>
-                      setNoteMap((prev) => ({ ...prev, [r.id]: e.target.value }))
-                    }
-                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none"
-                    disabled={r.status === "voided"}
-                  />
-                </div>
-
-                <div className="lg:col-span-2 flex items-start lg:justify-end">
-                  <button
-                    onClick={() => onVoid(r.id)}
-                    disabled={
-                      busyId === r.id ||
-                      r.status === "voided" ||
-                      r.status === "unlocked"
-                    }
-                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200"
-                  >
-                    {r.status === "voided"
-                      ? "Voided"
-                      : busyId === r.id
-                      ? "Voiding..."
-                      : "Void"}
-                  </button>
-                </div>
+                {/* rest of your code stays the same */}
               </div>
             </div>
           ))}

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 function money(n) {
@@ -113,7 +114,12 @@ function PayoutUserRow({ group, busy, onPayUser }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-4">
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            {group.username ? `@${group.username}` : group.user_id}
+            <Link
+              href={`/dashboard/users/${group.user_id}`}
+              className="hover:underline text-blue-600 dark:text-blue-400"
+            >
+              {group.username ? `@${group.username}` : group.user_id}
+            </Link>
           </p>
 
           <p className="mt-1 text-xs text-gray-500 dark:text-white/50">

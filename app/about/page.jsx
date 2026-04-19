@@ -5,6 +5,26 @@ import { BadgeCheck, Globe2, ShieldCheck, Trophy, Zap, MapPin, ArrowRight } from
 import Navbar from "@/components/Navbar"
 import { ArrowLeft } from 'lucide-react'
 
+export const metadata = {
+  title: 'About',
+  description:
+    'Learn more about Greenball360, a free football prediction platform built for fans who want to predict scores, compete, follow rankings and get rewarded weekly.',
+  keywords: [
+    'about Greenball360',
+    'free football prediction platform',
+    'football prediction community',
+  ],
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About Greenball360',
+    description:
+      'Discover Greenball360, a free football prediction platform for fans who enjoy competition and football updates.',
+    url: 'https://greenball360.com/about',
+  },
+};
+
 const values = [
   {
     icon: <ShieldCheck className="w-5 h-5" />,

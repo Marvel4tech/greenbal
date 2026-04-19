@@ -2,6 +2,29 @@ import Link from "next/link"
 import Navbar from "@/components/Navbar"
 import { createServerClientWrapper } from "@/lib/supabase/server"
 
+export const metadata = {
+  title: 'Football News',
+  description:
+    'Read the latest football news, match updates, and insights on Greenball360 while enjoying our free football prediction platform.',
+  keywords: [
+    'football news',
+    'latest football updates',
+    'football blog',
+    'free football prediction platform',
+    'Greenball360 news',
+  ],
+  alternates: {
+    canonical: '/news',
+  },
+  openGraph: {
+    title: 'Football News | Greenball360',
+    description:
+      'Stay updated with the latest football news and insights on Greenball360.',
+    url: 'https://greenball360.com/news',
+  },
+};
+
+
 function formatDate(date) {
   if (!date) return ""
   return new Intl.DateTimeFormat("en-GB", {

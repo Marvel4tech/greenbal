@@ -2,6 +2,14 @@ import ProfileNavbar from "@/components/ProfileNavbar";
 import BottomNavbar from "@/components/BottomNavbar";
 import ActivityTracker from "@/components/ActivityTracker";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+
 export default function ProfileLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">

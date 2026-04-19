@@ -4,6 +4,27 @@ import { Mail, MapPin, Clock, Phone, ArrowRight, ShieldCheck } from "lucide-reac
 import Navbar from "@/components/Navbar"
 import { ArrowLeft } from 'lucide-react'
 
+export const metadata = {
+  title: 'Contact Us',
+  description:
+    'Contact Greenball360 for support, questions, feedback, or partnership enquiries about our free football prediction platform.',
+  keywords: [
+    'contact Greenball360',
+    'football prediction support',
+    'free football platform contact',
+  ],
+  alternates: {
+    canonical: '/contact',
+  },
+  openGraph: {
+    title: 'Contact Greenball360',
+    description:
+      'Get in touch with Greenball360 for support and enquiries about our free football prediction platform.',
+    url: 'https://greenball360.com/contact',
+  },
+};
+
+
 const Page = () => {
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-gray-50 dark:bg-gray-900">

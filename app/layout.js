@@ -1,6 +1,5 @@
 import "./globals.css";
 import { Inter, Space_Grotesk } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import Footer from "@/components/Footer";
 import { GoogleAnalytics } from "@next/third-parties/google";

@@ -18,6 +18,10 @@ const space = Space_Grotesk({
 export const metadata = {
   metadataBase: new URL("https://www.greenball360.com"),
 
+  verification: {
+    google: "4skqnihVCK-mohRYQLYR-77d7fJcamVoGhiVXd-zp0s", // paste your code here
+  },
+
   title: {
     default: "Greenball360 — Free Sports Predictions & Weekly Rewards",
     template: "%s | Greenball360",

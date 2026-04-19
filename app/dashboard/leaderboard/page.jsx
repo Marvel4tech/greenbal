@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { createClient } from '@/lib/supabase/client'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -149,17 +149,15 @@ const Page = () => {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto mb-10">
-      {/* Live updating toast */}
       {isUpdating && (
         <div className="fixed bottom-6 right-6 z-50 bg-black text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg">
           Updating leaderboard…
         </div>
       )}
 
-      {/* Back button - visible on all devices */}
       <div className="mb-4">
-        <Link 
-          href="/dashboard" 
+        <Link
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -177,7 +175,6 @@ const Page = () => {
           </p>
         </div>
 
-        {/* Week controls */}
         <div className="flex items-center justify-center sm:justify-end gap-2 flex-wrap">
           <button
             onClick={goPrevWeek}
@@ -209,7 +206,6 @@ const Page = () => {
 
       {!loading && !error && (
         <>
-          {/* Quick Summary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className="bg-green-100 dark:bg-green-900 p-4 rounded-lg text-center shadow">
               <h3 className="text-sm text-gray-600 dark:text-gray-300">
@@ -234,12 +230,20 @@ const Page = () => {
                 Top Player
               </h3>
               <p className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
-                {players[0]?.name || "—"}
+                {players[0]?.name ? (
+                  <Link
+                    href={`/dashboard/users/${players[0].id}`}
+                    className="hover:underline"
+                  >
+                    {players[0].name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
               </p>
             </div>
           </div>
 
-          {/* Leaderboard */}
           <div className="bg-white dark:bg-black/50 rounded-xl shadow-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
             <table className="w-full text-sm md:text-base">
               <thead className="bg-primary text-white">
@@ -275,7 +279,14 @@ const Page = () => {
                         </span>
                       </td>
 
-                      <td className="p-3">{player.name}</td>
+                      <td className="p-3">
+                        <Link
+                          href={`/dashboard/users/${player.id}`}
+                          className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {player.name || "—"}
+                        </Link>
+                      </td>
 
                       <td className="p-3 text-xs md:text-sm text-gray-600 dark:text-gray-300">
                         {player.email || "—"}

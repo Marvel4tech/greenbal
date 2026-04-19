@@ -30,17 +30,23 @@ const LogInClient = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+  
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-
+  
       if (signInError) {
         throw signInError;
       }
-
+  
+      if (typeof window !== "undefined" && typeof window.gtag === "function") {
+        window.gtag("event", "login", {
+          method: "email",
+        });
+      }
+  
       window.location.href = "/profile";
     } catch (error) {
       setError(error.message);
